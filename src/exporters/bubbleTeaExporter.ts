@@ -1,0 +1,192 @@
+// Generates a Bubble Tea (Go) program from the project tree.
+//
+// The exporter produces a self-contained `main.go` that uses Bubble Tea +
+// Lip Gloss to render a static layout matching the design. It is not a 1:1
+// port of all behaviors (Bubble Tea components are not direct equivalents
+// of Textual widgets), but it gives the user a solid, runnable starting point.
+import type { AnsiColor, ComponentNode, ProjectState, Size } from '@/types/component';
+
+const ANSI_INDEX: Record<AnsiColor, string> = {
+  default: '',
+  black: '0',
+  red: '1',
+  green: '2',
+  yellow: '3',
+  blue: '4',
+  magenta: '5',
+  cyan: '6',
+  white: '7',
+  brightBlack: '8',
+  brightRed: '9',
+  brightGreen: '10',
+  brightYellow: '11',
+  brightBlue: '12',
+  brightMagenta: '13',
+  brightCyan: '14',
+  brightWhite: '15',
+};
+
+function goStr(s: string): string {
+  return JSON.stringify(s);
+}
+
+function sizeVal(s: Size | undefined, parent: number): number {
+  if (s === undefined || s === 'fill') return parent;
+  if (s === 'auto') return 0;
+  return s;
+}
+
+function styleVar(varName: string, node: ComponentNode): string {
+  const p = node.props;
+  const parts = [`var ${varName} = lipgloss.NewStyle()`];
+  if (p.fg && p.fg !== 'default') parts.push(`.Foreground(lipgloss.ANSIColor(${ANSI_INDEX[p.fg]}))`);
+  if (p.bg && p.bg !== 'default') parts.push(`.Background(lipgloss.ANSIColor(${ANSI_INDEX[p.bg]}))`);
+  if (p.bold) parts.push(`.Bold(true)`);
+  if (p.padding) parts.push(`.Padding(${p.padding})`);
+  if (p.border && p.border !== 'none') {
+    const b =
+      p.border === 'rounded'
+        ? 'lipgloss.RoundedBorder()'
+        : p.border === 'double'
+        ? 'lipgloss.DoubleBorder()'
+        : p.border === 'thick'
+        ? 'lipgloss.ThickBorder()'
+        : 'lipgloss.NormalBorder()';
+    parts.push(`.Border(${b})`);
+  }
+  if (p.width !== undefined && typeof p.width === 'number') parts.push(`.Width(${p.width})`);
+  if (p.height !== undefined && typeof p.height === 'number') parts.push(`.Height(${p.height})`);
+  return parts.join('');
+}
+
+function renderWidget(node: ComponentNode, components: Record<string, ComponentNode>, parent: { w: number; h: number }): string {
+  const p = node.props;
+  const w = sizeVal(p.width, parent.w);
+  const h = sizeVal(p.height, parent.h);
+
+  const inner: string = (() => {
+    switch (node.type) {
+      case 'container':
+      case 'modal': {
+        const childStrs = node.children
+          .map((cid) => components[cid])
+          .filter(Boolean)
+          .map((c) => renderWidget(c, components, { w, h }));
+        const join =
+          p.direction === 'row'
+            ? `lipgloss.JoinHorizontal(lipgloss.Top, ${childStrs.join(', ')})`
+            : `lipgloss.JoinVertical(lipgloss.Left, ${childStrs.join(', ')})`;
+        return childStrs.length === 0 ? `""` : join;
+      }
+      case 'text':
+        return goStr(p.text ?? '');
+      case 'button':
+        return goStr(`[ ${p.text ?? 'Button'} ]`);
+      case 'input':
+        return goStr(`▎ ${String(p.value ?? '') || p.placeholder || ''}`);
+      case 'textarea':
+        return goStr(String(p.value ?? '') || p.placeholder || '');
+      case 'checkbox':
+        return goStr(`${p.checked ? '[x]' : '[ ]'} ${p.label ?? ''}`);
+      case 'select':
+        return goStr(`${(p.items ?? [])[p.selectedIndex ?? 0] ?? ''} ▾`);
+      case 'list':
+        return goStr((p.items ?? []).map((it, i) => `${i === (p.selectedIndex ?? -1) ? '› ' : '  '}${it}`).join('\n'));
+      case 'tabs':
+        return goStr((p.items ?? []).map((it, i) => (i === (p.selectedIndex ?? 0) ? `[${it}]` : ` ${it} `)).join(' '));
+      case 'statusbar':
+        return goStr(p.text ?? '');
+      case 'progressbar': {
+        const totalCols = typeof p.width === 'number' ? p.width : 20;
+        const filled = Math.round(totalCols * (p.progress ?? 0));
+        return goStr(`${'█'.repeat(filled)}${'░'.repeat(Math.max(0, totalCols - filled))}`);
+      }
+      case 'table': {
+        const cols = p.columns ?? [];
+        const rows = p.rows ?? [];
+        const lines = [cols.join(' | '), cols.map(() => '---').join(' | '), ...rows.map((r) => r.join(' | '))];
+        return goStr(lines.join('\n'));
+      }
+      default:
+        return goStr(`<${node.type}>`);
+    }
+  })();
+
+  // Wrap with style
+  const styleParts: string[] = ['lipgloss.NewStyle()'];
+  if (p.fg && p.fg !== 'default') styleParts.push(`Foreground(lipgloss.ANSIColor(${ANSI_INDEX[p.fg]}))`);
+  if (p.bg && p.bg !== 'default') styleParts.push(`Background(lipgloss.ANSIColor(${ANSI_INDEX[p.bg]}))`);
+  if (p.bold) styleParts.push('Bold(true)');
+  if (p.padding) styleParts.push(`Padding(${p.padding})`);
+  if (p.border && p.border !== 'none') {
+    const b =
+      p.border === 'rounded'
+        ? 'lipgloss.RoundedBorder()'
+        : p.border === 'double'
+        ? 'lipgloss.DoubleBorder()'
+        : p.border === 'thick'
+        ? 'lipgloss.ThickBorder()'
+        : 'lipgloss.NormalBorder()';
+    styleParts.push(`Border(${b})`);
+  }
+  if (typeof p.width === 'number') styleParts.push(`Width(${p.width})`);
+  if (typeof p.height === 'number') styleParts.push(`Height(${p.height})`);
+
+  const style = styleParts.length > 1 ? styleParts.join('.') : null;
+  if (!style) return inner;
+  return `${style}.Render(${inner})`;
+}
+
+export function exportBubbleTea(project: ProjectState): string {
+  const root = project.components[project.rootId];
+  if (!root) return '// empty project';
+
+  // Suppress unused-style helper warnings for now.
+  void styleVar;
+
+  const view = renderWidget(root, project.components, { w: project.termCols, h: project.termRows });
+
+  return `// Auto-generated by TUI Builder.
+//
+// Run:
+//   go mod init tui-app
+//   go get github.com/charmbracelet/bubbletea github.com/charmbracelet/lipgloss
+//   go run main.go
+package main
+
+import (
+\t"fmt"
+\t"os"
+
+\ttea "github.com/charmbracelet/bubbletea"
+\t"github.com/charmbracelet/lipgloss"
+)
+
+type model struct{}
+
+func (m model) Init() tea.Cmd { return nil }
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+\tswitch msg := msg.(type) {
+\tcase tea.KeyMsg:
+\t\tswitch msg.String() {
+\t\tcase "q", "ctrl+c":
+\t\t\treturn m, tea.Quit
+\t\t}
+\t}
+\treturn m, nil
+}
+
+func (m model) View() string {
+\treturn ${view}
+}
+
+func main() {
+\tp := tea.NewProgram(model{}, tea.WithAltScreen())
+\tif _, err := p.Run(); err != nil {
+\t\tfmt.Fprintf(os.Stderr, "error: %v\\n", err)
+\t\tos.Exit(1)
+\t}
+}
+`;
+}

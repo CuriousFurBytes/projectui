@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-ink-800 border border-ink-600;
+  }
+  .panel-header {
+    @apply text-[11px] uppercase tracking-widest text-ink-300 px-3 py-2 border-b border-ink-600 flex items-center justify-between;
+  }
+  .btn {
+    @apply text-xs px-2 py-1 rounded border border-ink-500 bg-ink-700 hover:bg-ink-600 hover:border-ink-400 transition-colors;
+  }
+  .btn-primary {
+    @apply text-xs px-2 py-1 rounded bg-accent text-ink-900 font-semibold hover:bg-blue-300;
+  }
+  .input {
+    @apply text-xs w-full bg-ink-900 border border-ink-500 rounded px-2 py-1 focus:outline-none focus:border-accent;
+  }
+  .label {
+    @apply text-[10px] uppercase tracking-wider text-ink-300;
+  }
+  .row {
+    @apply flex items-center gap-2;
+  }
+}
+
+/* Prevent text selection during drag */
+.dragging * {
+  user-select: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #10131a;
+}
+::-webkit-scrollbar-thumb {
+  background: #262c39;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4255;
+}
