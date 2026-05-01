@@ -25,12 +25,21 @@ let loadingPromise: Promise<PyodideAPI> | null = null;
 
 function injectScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[data-pyodide]`)) return resolve();
+    const existing = document.querySelector<HTMLScriptElement>(`script[data-pyodide]`);
+    if (existing) {
+      // If a previous load succeeded (window.loadPyodide exists) we can reuse it.
+      // If not, remove the stale/failed tag so we can try again.
+      if (window.loadPyodide) return resolve();
+      existing.remove();
+    }
     const s = document.createElement('script');
     s.src = src;
     s.dataset.pyodide = 'true';
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    s.onerror = () => {
+      s.remove();
+      reject(new Error(`Failed to load ${src}`));
+    };
     document.head.appendChild(s);
   });
 }

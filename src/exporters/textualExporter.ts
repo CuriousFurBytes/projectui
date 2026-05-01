@@ -26,7 +26,7 @@ function styleBlock(node: ComponentNode): string[] {
   const lines: string[] = [];
   if (p.width !== undefined) lines.push(`width: ${sizeToCss(p.width)};`);
   if (p.height !== undefined) lines.push(`height: ${sizeToCss(p.height)};`);
-  if (p.padding) lines.push(`padding: ${p.padding};`);
+  if (p.padding !== undefined) lines.push(`padding: ${p.padding};`);
   if (p.fg && p.fg !== 'default') lines.push(`color: ${ansiToRich(p.fg)};`);
   if (p.bg && p.bg !== 'default') lines.push(`background: ${ansiToRich(p.bg)};`);
   if (p.border && p.border !== 'none') lines.push(`border: ${textualBorder(p.border)};`);
@@ -35,7 +35,7 @@ function styleBlock(node: ComponentNode): string[] {
 }
 
 function ansiToRich(c: string): string {
-  if (c.startsWith('bright')) return c.slice(6).toLowerCase();
+  if (c.startsWith('bright')) return `bright_${c.slice(6).toLowerCase()}`;
   return c;
 }
 
@@ -117,7 +117,11 @@ function tableInit(node: ComponentNode, components: Record<string, ComponentNode
   Object.values(components).forEach((n) => {
     if (n.type === 'table') {
       const cols = (n.props.columns ?? []).map(pyStr).join(', ');
-      const rows = (n.props.rows ?? []).map((r) => `(${r.map(pyStr).join(', ')})`).join(', ');
+      const rows = (n.props.rows ?? []).map((r) => {
+        const cells = r.map(pyStr).join(', ');
+        // Single-element tuples need a trailing comma to avoid being parsed as a grouped expression.
+        return r.length === 1 ? `(${cells},)` : `(${cells})`;
+      }).join(', ');
       out.push(
         `        table = self.query_one("#${id(n)}", DataTable)`,
         `        table.add_columns(${cols})`,

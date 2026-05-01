@@ -214,6 +214,6 @@ export function makeNode(type: ComponentType, parentId: string | null): Componen
     type,
     parentId,
     children: [],
-    props: { ...def.defaults },
+    props: JSON.parse(JSON.stringify(def.defaults)) as ComponentProps,
   };
 }

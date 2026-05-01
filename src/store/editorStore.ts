@@ -121,12 +121,7 @@ interface EditorState {
   redo: () => void;
 }
 
-const cloneProject = (p: ProjectState): ProjectState => ({
-  ...p,
-  components: Object.fromEntries(
-    Object.entries(p.components).map(([k, v]) => [k, { ...v, children: [...v.children], props: { ...v.props } }]),
-  ),
-});
+const cloneProject = (p: ProjectState): ProjectState => JSON.parse(JSON.stringify(p)) as ProjectState;
 
 function pushHistory(state: EditorState): Pick<EditorState, 'past' | 'future'> {
   const entry: UndoEntry = { project: cloneProject(state.project), selectedId: state.selectedId };
@@ -291,7 +286,7 @@ export const useEditor = create<EditorState>()(
       loadFromJson: (json) => {
         try {
           const parsed = JSON.parse(json) as ProjectState;
-          if (!parsed.rootId || !parsed.components) throw new Error('invalid');
+          if (!parsed.rootId || !parsed.components || !parsed.components[parsed.rootId]) throw new Error('invalid');
           saveProject(parsed);
           set({ project: parsed, selectedId: null, past: [], future: [] });
         } catch (e) {

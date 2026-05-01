@@ -62,8 +62,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function PropertiesPanel() {
-  const { selectedId, project, updateProps, rename } = useEditor();
-  const node = selectedId ? project.components[selectedId] ?? null : null;
+  const node = useEditor((s) => (s.selectedId ? s.project.components[s.selectedId] ?? null : null));
+  const updateProps = useEditor((s) => s.updateProps);
+  const rename = useEditor((s) => s.rename);
 
   if (!node) {
     return (

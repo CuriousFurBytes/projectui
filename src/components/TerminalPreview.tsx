@@ -15,12 +15,47 @@ interface CellSize {
 
 function useCellSize(probeRef: RefObject<HTMLSpanElement>): CellSize {
   const [size, setSize] = useState<CellSize>({ w: 8, h: 16 });
+  const frameRef = useRef(0);
+
   useLayoutEffect(() => {
-    if (probeRef.current) {
+    const measure = () => {
+      if (!probeRef.current) return;
       const rect = probeRef.current.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       // The probe contains 80 chars × 1 row.
-      setSize({ w: rect.width / 80, h: rect.height });
-    }
+      const next = { w: rect.width / 80, h: rect.height };
+      setSize((prev) => (prev.w === next.w && prev.h === next.h ? prev : next));
+    };
+
+    const scheduleMeasure = () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = 0;
+        measure();
+      });
+    };
+
+    scheduleMeasure();
+    window.addEventListener('resize', scheduleMeasure);
+
+    const probe = probeRef.current;
+    const resizeObserver =
+      probe && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => scheduleMeasure())
+        : null;
+    if (probe && resizeObserver) resizeObserver.observe(probe);
+
+    const fonts = document.fonts;
+    const onFontsLoaded = () => scheduleMeasure();
+    fonts.ready.then(onFontsLoaded).catch(() => {});
+    fonts.addEventListener('loadingdone', onFontsLoaded);
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      window.removeEventListener('resize', scheduleMeasure);
+      resizeObserver?.disconnect();
+      fonts.removeEventListener('loadingdone', onFontsLoaded);
+    };
   }, [probeRef]);
   return size;
 }
