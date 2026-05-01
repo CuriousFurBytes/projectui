@@ -16,7 +16,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: process.env.SOURCEMAP === 'true',
   },
   test: {
     environment: 'node',

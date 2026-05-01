@@ -245,33 +245,41 @@ export const useEditor = create<EditorState>()(
       setHidden: (id, hidden) => {
         const state = get();
         const node = state.project.components[id];
-        if (!node) return;
+        if (!node || node.hidden === hidden) return;
+        const next = pushHistory(state);
         const components = { ...state.project.components, [id]: { ...node, hidden } };
         const project = { ...state.project, components };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       setLocked: (id, locked) => {
         const state = get();
         const node = state.project.components[id];
-        if (!node) return;
+        if (!node || node.locked === locked) return;
+        const next = pushHistory(state);
         const components = { ...state.project.components, [id]: { ...node, locked } };
         const project = { ...state.project, components };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       setTermSize: (cols, rows) => {
-        const project = { ...get().project, termCols: cols, termRows: rows };
+        const state = get();
+        if (cols === state.project.termCols && rows === state.project.termRows) return;
+        const next = pushHistory(state);
+        const project = { ...state.project, termCols: cols, termRows: rows };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       setTheme: (theme) => {
-        const project = { ...get().project, theme };
+        const state = get();
+        if (theme === state.project.theme) return;
+        const next = pushHistory(state);
+        const project = { ...state.project, theme };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       reset: () => {

@@ -78,11 +78,18 @@ export function LayersPanel() {
           </button>
           {node.id !== project.rootId && (
             <button
-              className="opacity-0 group-hover:opacity-100 hover:text-red-400 text-ink-300"
-              title="Delete"
-              aria-label="Delete"
+              className={clsx(
+                'opacity-0 group-hover:opacity-100 text-ink-300',
+                node.locked
+                  ? 'cursor-not-allowed opacity-50 group-hover:opacity-50'
+                  : 'hover:text-red-400',
+              )}
+              title={node.locked ? 'Unlock to delete' : 'Delete'}
+              aria-label={node.locked ? 'Locked node cannot be deleted' : 'Delete'}
+              disabled={node.locked}
               onClick={(e) => {
                 e.stopPropagation();
+                if (node.locked) return;
                 if (confirm(`Delete ${label}?`)) remove(node.id);
               }}
             >

@@ -188,7 +188,7 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     label: 'Modal',
     group: 'advanced',
     icon: '◫',
-    description: 'Centered overlay container.',
+    description: 'Overlay container (renders in document flow; position via parent layout).',
     acceptsChildren: true,
     defaults: {
       title: 'Confirm',

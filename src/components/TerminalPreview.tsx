@@ -48,7 +48,7 @@ export function TerminalPreview() {
         return;
       if ((e.key === 'Backspace' || e.key === 'Delete') && selectedId) {
         const node = useEditor.getState().project.components[selectedId];
-        if (node && node.parentId) {
+        if (node && node.parentId && !node.locked) {
           useEditor.getState().remove(selectedId);
           e.preventDefault();
         }

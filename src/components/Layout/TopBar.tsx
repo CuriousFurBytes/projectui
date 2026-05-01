@@ -28,7 +28,7 @@ export function TopBar({
     a.href = url;
     a.download = 'tui-project.json';
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   const handleImport = (file: File) => {

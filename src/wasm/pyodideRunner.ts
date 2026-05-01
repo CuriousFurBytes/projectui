@@ -43,11 +43,16 @@ export async function loadPyodideRuntime(): Promise<PyodideAPI> {
   if (pyodide) return pyodide;
   if (loadingPromise) return loadingPromise;
   loadingPromise = (async () => {
-    await injectScript(`${PYODIDE_BASE_URL}pyodide.js`);
-    if (!window.loadPyodide) throw new Error('Pyodide loader not present after script injection');
-    const py = await window.loadPyodide({ indexURL: PYODIDE_BASE_URL });
-    pyodide = py;
-    return py;
+    try {
+      await injectScript(`${PYODIDE_BASE_URL}pyodide.js`);
+      if (!window.loadPyodide) throw new Error('Pyodide loader not present after script injection');
+      const py = await window.loadPyodide({ indexURL: PYODIDE_BASE_URL });
+      pyodide = py;
+      return py;
+    } catch (e) {
+      loadingPromise = null;
+      throw e;
+    }
   })();
   return loadingPromise;
 }

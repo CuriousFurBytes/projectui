@@ -36,29 +36,6 @@ function sizeVal(s: Size | undefined, parent: number): number {
   return s;
 }
 
-function styleVar(varName: string, node: ComponentNode): string {
-  const p = node.props;
-  const parts = [`var ${varName} = lipgloss.NewStyle()`];
-  if (p.fg && p.fg !== 'default') parts.push(`.Foreground(lipgloss.ANSIColor(${ANSI_INDEX[p.fg]}))`);
-  if (p.bg && p.bg !== 'default') parts.push(`.Background(lipgloss.ANSIColor(${ANSI_INDEX[p.bg]}))`);
-  if (p.bold) parts.push(`.Bold(true)`);
-  if (p.padding) parts.push(`.Padding(${p.padding})`);
-  if (p.border && p.border !== 'none') {
-    const b =
-      p.border === 'rounded'
-        ? 'lipgloss.RoundedBorder()'
-        : p.border === 'double'
-        ? 'lipgloss.DoubleBorder()'
-        : p.border === 'thick'
-        ? 'lipgloss.ThickBorder()'
-        : 'lipgloss.NormalBorder()';
-    parts.push(`.Border(${b})`);
-  }
-  if (p.width !== undefined && typeof p.width === 'number') parts.push(`.Width(${p.width})`);
-  if (p.height !== undefined && typeof p.height === 'number') parts.push(`.Height(${p.height})`);
-  return parts.join('');
-}
-
 function renderWidget(node: ComponentNode, components: Record<string, ComponentNode>, parent: { w: number; h: number }): string {
   const p = node.props;
   const w = sizeVal(p.width, parent.w);
@@ -141,9 +118,6 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
 export function exportBubbleTea(project: ProjectState): string {
   const root = project.components[project.rootId];
   if (!root) return '// empty project';
-
-  // Suppress unused-style helper warnings for now.
-  void styleVar;
 
   const view = renderWidget(root, project.components, { w: project.termCols, h: project.termRows });
 
