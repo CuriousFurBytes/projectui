@@ -38,6 +38,14 @@ export function TopBar({
       loadFromJson(String(reader.result ?? ''));
       setImporting(false);
     };
+    reader.onerror = () => {
+      setImporting(false);
+      window.alert('Failed to import project file.');
+    };
+    reader.onabort = () => {
+      setImporting(false);
+      window.alert('Import was cancelled.');
+    };
     reader.readAsText(file);
   };
 
@@ -52,10 +60,10 @@ export function TopBar({
       <div className="h-5 w-px bg-ink-600 mx-1" />
 
       <div className="flex items-center gap-1">
-        <button className="btn" onClick={undo} disabled={past.length === 0} title="Undo (⌘Z)">
+        <button className="btn" onClick={undo} disabled={past.length === 0} title="Undo (⌘Z)" aria-label="Undo">
           ↶
         </button>
-        <button className="btn" onClick={redo} disabled={future.length === 0} title="Redo (⌘⇧Z)">
+        <button className="btn" onClick={redo} disabled={future.length === 0} title="Redo (⌘⇧Z)" aria-label="Redo">
           ↷
         </button>
       </div>

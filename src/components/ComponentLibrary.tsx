@@ -1,3 +1,4 @@
+import type { DragEvent } from 'react';
 import { COMPONENT_DEFS, type ComponentDef } from '@/lib/componentDefs';
 import { useState } from 'react';
 import clsx from 'clsx';
@@ -11,7 +12,7 @@ const GROUPS: { id: ComponentDef['group']; label: string }[] = [
 export function ComponentLibrary() {
   const [query, setQuery] = useState('');
 
-  const handleDragStart = (e: React.DragEvent, def: ComponentDef) => {
+  const handleDragStart = (e: DragEvent, def: ComponentDef) => {
     e.dataTransfer.setData('application/x-tui-component', def.type);
     e.dataTransfer.effectAllowed = 'copy';
   };

@@ -147,13 +147,10 @@ export const useEditor = create<EditorState>()(
       setHover: (id) => set({ hoverId: id }),
 
       addChild: (parentId, type, index) => {
-        const def = getDef(type);
         const state = get();
         const parent = state.project.components[parentId];
         if (!parent) return '';
-        if (!def.acceptsChildren && parent.children.length === 0 && parentId !== state.project.rootId) {
-          // Allow drop onto leaf only when it represents the root drop area; reject otherwise.
-        }
+        if (!getDef(parent.type).acceptsChildren) return '';
         const node = makeNode(type, parentId);
         const next = pushHistory(state);
         const components = { ...state.project.components };
@@ -220,6 +217,7 @@ export const useEditor = create<EditorState>()(
         const node = state.project.components[id];
         const newParent = state.project.components[newParentId];
         if (!node || !newParent || id === newParentId) return;
+        if (!getDef(newParent.type).acceptsChildren) return;
         // Disallow moving into own descendant.
         const isDescendant = (target: string, ancestor: string): boolean => {
           if (target === ancestor) return true;

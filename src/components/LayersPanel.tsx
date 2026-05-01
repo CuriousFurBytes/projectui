@@ -57,6 +57,7 @@ export function LayersPanel() {
           <button
             className="opacity-0 group-hover:opacity-100 hover:text-white text-ink-300"
             title={node.hidden ? 'Show' : 'Hide'}
+            aria-label={node.hidden ? 'Show' : 'Hide'}
             onClick={(e) => {
               e.stopPropagation();
               setHidden(node.id, !node.hidden);
@@ -67,6 +68,7 @@ export function LayersPanel() {
           <button
             className="opacity-0 group-hover:opacity-100 hover:text-white text-ink-300"
             title={node.locked ? 'Unlock' : 'Lock'}
+            aria-label={node.locked ? 'Unlock' : 'Lock'}
             onClick={(e) => {
               e.stopPropagation();
               setLocked(node.id, !node.locked);
@@ -78,6 +80,7 @@ export function LayersPanel() {
             <button
               className="opacity-0 group-hover:opacity-100 hover:text-red-400 text-ink-300"
               title="Delete"
+              aria-label="Delete"
               onClick={(e) => {
                 e.stopPropagation();
                 if (confirm(`Delete ${label}?`)) remove(node.id);

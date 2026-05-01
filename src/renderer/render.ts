@@ -310,7 +310,7 @@ function paintNode(
       drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg);
       const lines = (String(p.value ?? '') || p.placeholder || '').split('\n');
       const dim = !p.value && p.placeholder ? 'brightBlack' : p.fg;
-      lines.slice(0, rect.h - 2).forEach((line, i) => {
+      lines.slice(0, Math.max(0, rect.h - 2)).forEach((line, i) => {
         writeText(grid, rect.x + 1, rect.y + 1 + i, line, rect.w - 2, dim, p.bg);
       });
       break;
@@ -333,7 +333,7 @@ function paintNode(
       drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title);
       const items = p.items ?? [];
       const idx = p.selectedIndex ?? -1;
-      items.slice(0, rect.h - 2).forEach((it, i) => {
+      items.slice(0, Math.max(0, rect.h - 2)).forEach((it, i) => {
         const sel = i === idx;
         writeText(
           grid,
@@ -393,7 +393,7 @@ function paintNode(
       for (let i = 0; i < innerW; i++) {
         setCell(grid, rect.x + 1 + i, rect.y + 2, { ch: '─', fg: p.fg ?? 'brightBlack', bg: p.bg });
       }
-      rows.slice(0, rect.h - 4).forEach((row, ri) => {
+      rows.slice(0, Math.max(0, rect.h - 4)).forEach((row, ri) => {
         row.forEach((cell, ci) => {
           writeText(grid, rect.x + 1 + ci * colW, rect.y + 3 + ri, cell ?? '', colW, p.fg, p.bg);
         });

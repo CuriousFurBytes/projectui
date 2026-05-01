@@ -35,9 +35,31 @@ export function CodeView() {
   }, [lang]);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    let didCopy = false;
+    try {
+      await navigator.clipboard.writeText(code);
+      didCopy = true;
+    } catch {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        didCopy = document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch (error) {
+        console.error('Failed to copy code to clipboard.', error);
+      }
+    }
+    if (didCopy) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   };
 
   const download = () => {

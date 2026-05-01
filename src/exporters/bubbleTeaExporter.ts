@@ -98,7 +98,8 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
         return goStr(p.text ?? '');
       case 'progressbar': {
         const totalCols = typeof p.width === 'number' ? p.width : 20;
-        const filled = Math.round(totalCols * (p.progress ?? 0));
+        const progress = Math.min(1, Math.max(0, p.progress ?? 0));
+        const filled = Math.round(totalCols * progress);
         return goStr(`${'█'.repeat(filled)}${'░'.repeat(Math.max(0, totalCols - filled))}`);
       }
       case 'table': {

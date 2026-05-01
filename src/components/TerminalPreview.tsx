@@ -1,9 +1,11 @@
 import { useMemo, useRef, useEffect, useState, useLayoutEffect } from 'react';
+import type { RefObject, DragEvent, MouseEvent } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { render, type Cell, type Rect } from '@/renderer/render';
 import { getTheme } from '@/lib/themes';
-import type { AnsiColor } from '@/types/component';
+import type { AnsiColor, ComponentType } from '@/types/component';
 import { getDef } from '@/lib/componentDefs';
+import { COMPONENT_DEFS } from '@/lib/componentDefs';
 import clsx from 'clsx';
 
 interface CellSize {
@@ -11,7 +13,7 @@ interface CellSize {
   h: number;
 }
 
-function useCellSize(probeRef: React.RefObject<HTMLSpanElement>): CellSize {
+function useCellSize(probeRef: RefObject<HTMLSpanElement>): CellSize {
   const [size, setSize] = useState<CellSize>({ w: 8, h: 16 });
   useLayoutEffect(() => {
     if (probeRef.current) {
@@ -60,8 +62,10 @@ export function TerminalPreview() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId]);
 
+  const KNOWN_TYPES = new Set<string>(COMPONENT_DEFS.map((d) => d.type));
+
   // Find which container should receive a drop at the given client coords.
-  const findDropTarget = (e: React.DragEvent): { parentId: string; index: number } | null => {
+  const findDropTarget = (e: DragEvent): { parentId: string; index: number } | null => {
     const wrap = e.currentTarget.getBoundingClientRect();
     const x = Math.floor((e.clientX - wrap.left) / cell.w);
     const y = Math.floor((e.clientY - wrap.top) / cell.h);
@@ -97,11 +101,11 @@ export function TerminalPreview() {
         onDragLeave={() => setDragOverId(null)}
         onDrop={(e) => {
           const type = e.dataTransfer.getData('application/x-tui-component');
-          if (!type) return;
+          if (!type || !KNOWN_TYPES.has(type)) return;
           e.preventDefault();
           const target = findDropTarget(e);
           if (target) {
-            addChild(target.parentId, type as never, target.index);
+            addChild(target.parentId, type as ComponentType, target.index);
           }
           setDragOverId(null);
         }}
@@ -228,13 +232,17 @@ function Overlay({
   color: string;
   dashed?: boolean;
   opacity?: number;
-  onClick?: (e: React.MouseEvent) => void;
+  onClick?: (e: MouseEvent) => void;
 }) {
   if (!rect) return null;
   return (
     <div
       onClick={onClick}
-      className={clsx('absolute pointer-events-none', dashed ? 'border-dashed' : 'border-solid')}
+      className={clsx(
+        'absolute',
+        onClick ? 'pointer-events-auto' : 'pointer-events-none',
+        dashed ? 'border-dashed' : 'border-solid',
+      )}
       style={{
         left: rect.x * cell.w,
         top: rect.y * cell.h,

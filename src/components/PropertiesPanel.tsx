@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import type {
@@ -42,7 +43,7 @@ function stringToSize(s: string): Size {
   return Number.isFinite(n) && n > 0 ? n : 'auto';
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
       <span className="label">{label}</span>
@@ -51,7 +52,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="border-b border-ink-600">
       <div className="panel-header !border-b-0 !py-1.5">{title}</div>

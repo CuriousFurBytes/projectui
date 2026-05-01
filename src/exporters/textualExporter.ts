@@ -6,7 +6,8 @@ import type { ComponentNode, ProjectState, Size } from '@/types/component';
 const INDENT = '    ';
 
 function id(node: ComponentNode): string {
-  const safe = (node.name ?? node.type).replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+  const sanitized = (node.name ?? node.type).replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+  const safe = sanitized === '' || /^[0-9]/.test(sanitized) ? `_${sanitized}` : sanitized;
   return `${safe}_${node.id.split('_').pop()}`;
 }
 
