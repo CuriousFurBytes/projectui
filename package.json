@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers playwright test"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -18,6 +19,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/node": "^20.19.39",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

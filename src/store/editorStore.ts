@@ -32,18 +32,24 @@ function makeInitialProject(): ProjectState {
   body.children.push(left.id);
 
   const right = makeNode('container', body.id);
-  right.props = { ...right.props, direction: 'column', width: 'fill', border: 'single', title: ' Details ', padding: 1, gap: 1 };
+  right.props = { ...right.props, direction: 'column', width: 'fill', border: 'single', title: ' Details ', padding: 1, gap: 0, align: 'center', justify: 'center' };
 
-  const rightText = makeNode('text', right.id);
+  // Centered panel: gray rounded border + title, centered inside the Details pane.
+  const centeredPanel = makeNode('container', right.id);
+  centeredPanel.name = 'Centered Panel';
+  centeredPanel.props = { ...centeredPanel.props, direction: 'column', width: 36, height: 12, border: 'rounded', fg: 'brightBlack', title: ' Panel ', padding: 1, gap: 1 };
+
+  const rightText = makeNode('text', centeredPanel.id);
   rightText.props = { ...rightText.props, text: 'Drag components from the left panel, or pick a layer to edit.' };
-  right.children.push(rightText.id);
+  centeredPanel.children.push(rightText.id);
 
-  const progress = makeNode('progressbar', right.id);
-  right.children.push(progress.id);
+  const progress = makeNode('progressbar', centeredPanel.id);
+  centeredPanel.children.push(progress.id);
 
-  const button = makeNode('button', right.id);
-  right.children.push(button.id);
+  const button = makeNode('button', centeredPanel.id);
+  centeredPanel.children.push(button.id);
 
+  right.children.push(centeredPanel.id);
   body.children.push(right.id);
 
   const status = makeNode('statusbar', rootId);
@@ -59,6 +65,7 @@ function makeInitialProject(): ProjectState {
       [body.id]: body,
       [left.id]: left,
       [right.id]: right,
+      [centeredPanel.id]: centeredPanel,
       [rightText.id]: rightText,
       [progress.id]: progress,
       [button.id]: button,

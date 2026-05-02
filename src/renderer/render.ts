@@ -228,8 +228,18 @@ function layoutNode(
     });
   }
 
+  // justify: center — offset the main-axis start so children are centered as a group.
+  const justify = node.props.justify;
+  const totalUsed = sizes.reduce((s, v) => s + v, 0) + totalGap;
+  const mainOffset =
+    justify === 'center'
+      ? Math.floor(((direction === 'row' ? innerW : innerH) - totalUsed) / 2)
+      : 0;
+
+  const align = node.props.align;
+
   // Cross axis: each child fills the cross axis (or honors a fixed size).
-  let cursor = direction === 'row' ? innerX : innerY;
+  let cursor = (direction === 'row' ? innerX : innerY) + Math.max(0, mainOffset);
   children.forEach((child, i) => {
     let cx: number, cy: number, cw: number, ch: number;
     if (direction === 'row') {
@@ -242,7 +252,8 @@ function layoutNode(
           ? Math.min(heightProp, innerH)
           : Math.min(intrinsicHeight(child), innerH);
       cx = cursor;
-      cy = innerY;
+      // align:center on cross axis (vertical) for row direction
+      cy = align === 'center' ? innerY + Math.floor((innerH - ch) / 2) : innerY;
       cursor += cw + gap;
     } else {
       ch = sizes[i];
@@ -253,7 +264,8 @@ function layoutNode(
           : typeof widthProp === 'number'
           ? Math.min(widthProp, innerW)
           : Math.min(intrinsicWidth(child), innerW);
-      cx = innerX;
+      // align:center on cross axis (horizontal) for column direction
+      cx = align === 'center' ? innerX + Math.floor((innerW - cw) / 2) : innerX;
       cy = cursor;
       cursor += ch + gap;
     }
