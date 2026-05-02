@@ -310,8 +310,9 @@ function paintNode(
       drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg);
       const lines = (String(p.value ?? '') || p.placeholder || '').split('\n');
       const dim = !p.value && p.placeholder ? 'brightBlack' : p.fg;
-      lines.slice(0, Math.max(0, rect.h - 2)).forEach((line, i) => {
-        writeText(grid, rect.x + 1, rect.y + 1 + i, line, rect.w - 2, dim, p.bg);
+      const inset = p.border && p.border !== 'none' ? 1 : 0;
+      lines.slice(0, Math.max(0, rect.h - 2 * inset)).forEach((line, i) => {
+        writeText(grid, rect.x + inset, rect.y + inset + i, line, Math.max(0, rect.w - 2 * inset), dim, p.bg);
       });
       break;
     }
@@ -333,14 +334,15 @@ function paintNode(
       drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title);
       const items = p.items ?? [];
       const idx = p.selectedIndex ?? -1;
-      items.slice(0, Math.max(0, rect.h - 2)).forEach((it, i) => {
+      const inset = p.border && p.border !== 'none' ? 1 : 0;
+      items.slice(0, Math.max(0, rect.h - 2 * inset)).forEach((it, i) => {
         const sel = i === idx;
         writeText(
           grid,
-          rect.x + 1,
-          rect.y + 1 + i,
+          rect.x + inset,
+          rect.y + inset + i,
           (sel ? '› ' : '  ') + it,
-          rect.w - 2,
+          Math.max(0, rect.w - 2 * inset),
           sel ? 'brightWhite' : p.fg,
           sel ? 'brightBlack' : p.bg,
           sel,
@@ -383,19 +385,25 @@ function paintNode(
       const cols = p.columns ?? [];
       const rows = p.rows ?? [];
       if (cols.length === 0) break;
-      const innerW = rect.w - 2;
+      const inset = p.border && p.border !== 'none' ? 1 : 0;
+      const innerW = Math.max(0, rect.w - 2 * inset);
       const colW = Math.floor(innerW / cols.length);
-      // header
-      cols.forEach((c, i) => {
-        writeText(grid, rect.x + 1 + i * colW, rect.y + 1, c, colW, 'brightWhite', p.bg, true);
-      });
-      // separator
-      for (let i = 0; i < innerW; i++) {
-        setCell(grid, rect.x + 1 + i, rect.y + 2, { ch: '─', fg: p.fg ?? 'brightBlack', bg: p.bg });
+      // header — only if there is a row inside the widget bounds
+      if (rect.h > inset) {
+        cols.forEach((c, i) => {
+          writeText(grid, rect.x + inset + i * colW, rect.y + inset, c, colW, 'brightWhite', p.bg, true);
+        });
       }
-      rows.slice(0, Math.max(0, rect.h - 4)).forEach((row, ri) => {
+      // separator — only if there is a row below the header
+      if (rect.h > inset + 1) {
+        for (let i = 0; i < innerW; i++) {
+          setCell(grid, rect.x + inset + i, rect.y + inset + 1, { ch: '─', fg: p.fg ?? 'brightBlack', bg: p.bg });
+        }
+      }
+      // data rows
+      rows.slice(0, Math.max(0, rect.h - 2 * inset - 2)).forEach((row, ri) => {
         row.forEach((cell, ci) => {
-          writeText(grid, rect.x + 1 + ci * colW, rect.y + 3 + ri, cell ?? '', colW, p.fg, p.bg);
+          writeText(grid, rect.x + inset + ci * colW, rect.y + inset + 2 + ri, cell ?? '', colW, p.fg, p.bg);
         });
       });
       break;

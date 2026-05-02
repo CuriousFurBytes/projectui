@@ -40,20 +40,21 @@ export function CodeView() {
       await navigator.clipboard.writeText(code);
       didCopy = true;
     } catch {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.pointerEvents = 'none';
+      document.body.appendChild(ta);
       try {
-        const textarea = document.createElement('textarea');
-        textarea.value = code;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        textarea.style.pointerEvents = 'none';
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
+        ta.focus();
+        ta.select();
         didCopy = document.execCommand('copy');
-        document.body.removeChild(textarea);
       } catch (error) {
         console.error('Failed to copy code to clipboard.', error);
+      } finally {
+        document.body.removeChild(ta);
       }
     }
     if (didCopy) {

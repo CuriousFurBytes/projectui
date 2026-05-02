@@ -40,5 +40,6 @@ describe('textualExporter id()', () => {
     const project = makeProject({ id: 'xyz', name: '999' });
     const output = exportTextual(project);
     expect(output).not.toMatch(/id="\d/);
+    expect(output).toMatch(/id="_999_/);
   });
 });

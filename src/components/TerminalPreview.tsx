@@ -4,9 +4,10 @@ import { useEditor } from '@/store/editorStore';
 import { render, type Cell, type Rect } from '@/renderer/render';
 import { getTheme } from '@/lib/themes';
 import type { AnsiColor, ComponentType } from '@/types/component';
-import { getDef } from '@/lib/componentDefs';
-import { COMPONENT_DEFS } from '@/lib/componentDefs';
+import { getDef, COMPONENT_DEFS } from '@/lib/componentDefs';
 import clsx from 'clsx';
+
+const KNOWN_TYPES = new Set<string>(COMPONENT_DEFS.map((d) => d.type));
 
 interface CellSize {
   w: number;
@@ -97,8 +98,6 @@ export function TerminalPreview() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId]);
 
-  const KNOWN_TYPES = new Set<string>(COMPONENT_DEFS.map((d) => d.type));
-
   // Find which container should receive a drop at the given client coords.
   const findDropTarget = (e: DragEvent): { parentId: string; index: number } | null => {
     const wrap = e.currentTarget.getBoundingClientRect();
@@ -157,14 +156,7 @@ export function TerminalPreview() {
 
         <CellGrid grid={result.grid} theme={theme} fontSize={14} lineHeight={18} />
 
-        {/* Overlays for selection, hover, drag target */}
-        <Overlay
-          rect={selectedId ? result.rects[selectedId] : null}
-          cell={{ w: cell.w, h: cell.h }}
-          color={theme.accent}
-          dashed={false}
-          onClick={(e) => e.stopPropagation()}
-        />
+        {/* Hover and drag-target overlays (no click handling, behind hitboxes) */}
         <Overlay
           rect={hoverId && hoverId !== selectedId ? result.rects[hoverId] ?? null : null}
           cell={{ w: cell.w, h: cell.h }}
@@ -193,6 +185,15 @@ export function TerminalPreview() {
             />
           ))}
         </div>
+
+        {/* Selection overlay last in DOM so it stacks on top and its onClick fires */}
+        <Overlay
+          rect={selectedId ? result.rects[selectedId] : null}
+          cell={{ w: cell.w, h: cell.h }}
+          color={theme.accent}
+          dashed={false}
+          onClick={(e) => e.stopPropagation()}
+        />
       </div>
     </div>
   );

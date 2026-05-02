@@ -145,7 +145,11 @@ export const useEditor = create<EditorState>()(
         const state = get();
         const parent = state.project.components[parentId];
         if (!parent) return '';
-        if (!getDef(parent.type).acceptsChildren) return '';
+        try {
+          if (!getDef(parent.type).acceptsChildren) return '';
+        } catch {
+          return '';
+        }
         const node = makeNode(type, parentId);
         const next = pushHistory(state);
         const components = { ...state.project.components };
@@ -212,14 +216,18 @@ export const useEditor = create<EditorState>()(
         const node = state.project.components[id];
         const newParent = state.project.components[newParentId];
         if (!node || !newParent || id === newParentId) return;
-        if (!getDef(newParent.type).acceptsChildren) return;
+        try {
+          if (!getDef(newParent.type).acceptsChildren) return;
+        } catch {
+          return;
+        }
         // Disallow moving into own descendant.
-        const isDescendant = (target: string, ancestor: string): boolean => {
-          if (target === ancestor) return true;
-          const t = state.project.components[target];
-          return t?.children.some((c) => isDescendant(c, ancestor)) ?? false;
+        const subtreeContains = (subtreeRoot: string, nodeId: string): boolean => {
+          if (subtreeRoot === nodeId) return true;
+          const t = state.project.components[subtreeRoot];
+          return t?.children.some((c) => subtreeContains(c, nodeId)) ?? false;
         };
-        if (isDescendant(id, newParentId)) return;
+        if (subtreeContains(id, newParentId)) return;
 
         const next = pushHistory(state);
         const components = { ...state.project.components };

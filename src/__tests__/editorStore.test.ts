@@ -11,8 +11,6 @@ vi.stubGlobal('localStorage', {
 import { useEditor } from '../store/editorStore';
 
 function freshStore() {
-  useEditor.setState(useEditor.getInitialState ? useEditor.getInitialState() : useEditor.getState());
-  // Reset to a clean initial project by calling reset()
   useEditor.getState().reset();
 }
 
@@ -23,23 +21,17 @@ describe('editorStore – addChild parent validation', () => {
 
   it('refuses to add a child to a leaf node (text)', () => {
     const state = useEditor.getState();
-    const root = state.project.components[state.project.rootId];
-    // Find or add a text node
     const textId = state.addChild(state.project.rootId, 'text');
     expect(textId).not.toBe('');
 
     const beforeCount = Object.keys(useEditor.getState().project.components).length;
-    // Try to add a child to a text node (leaf) — should be rejected
     const result = useEditor.getState().addChild(textId, 'button');
     expect(result).toBe('');
-    const afterCount = Object.keys(useEditor.getState().project.components).length;
-    expect(afterCount).toBe(beforeCount);
-    void root;
+    expect(Object.keys(useEditor.getState().project.components).length).toBe(beforeCount);
   });
 
   it('allows adding a child to a container', () => {
-    const state = useEditor.getState();
-    const result = state.addChild(state.project.rootId, 'button');
+    const result = useEditor.getState().addChild(useEditor.getState().project.rootId, 'button');
     expect(result).not.toBe('');
   });
 });
@@ -50,33 +42,40 @@ describe('editorStore – move parent validation', () => {
   });
 
   it('refuses to move a node into a leaf node', () => {
-    const state = useEditor.getState();
-    const rootId = state.project.rootId;
-
-    // Add two children to root
-    const textId = state.addChild(rootId, 'text');
+    const rootId = useEditor.getState().project.rootId;
+    const textId = useEditor.getState().addChild(rootId, 'text');
     const btnId = useEditor.getState().addChild(rootId, 'button');
 
-    const beforeChildren = useEditor.getState().project.components[textId].children;
-    expect(beforeChildren.length).toBe(0);
-
-    // Try to move button into text (leaf — should be rejected)
     useEditor.getState().move(btnId, textId, 0);
 
-    const afterChildren = useEditor.getState().project.components[textId]?.children ?? [];
-    expect(afterChildren.length).toBe(0);
+    const textChildren = useEditor.getState().project.components[textId]?.children ?? [];
+    expect(textChildren.length).toBe(0);
   });
 
   it('allows moving a node into a container', () => {
-    const state = useEditor.getState();
-    const rootId = state.project.rootId;
-
-    const containerId = state.addChild(rootId, 'container');
+    const rootId = useEditor.getState().project.rootId;
+    const containerId = useEditor.getState().addChild(rootId, 'container');
     const btnId = useEditor.getState().addChild(rootId, 'button');
 
     useEditor.getState().move(btnId, containerId, 0);
 
-    const containerChildren = useEditor.getState().project.components[containerId].children;
-    expect(containerChildren).toContain(btnId);
+    expect(useEditor.getState().project.components[containerId].children).toContain(btnId);
+  });
+
+  it('refuses to move a node into its own descendant (circular reference guard)', () => {
+    const rootId = useEditor.getState().project.rootId;
+    // root → outer → inner
+    const outerId = useEditor.getState().addChild(rootId, 'container');
+    const innerId = useEditor.getState().addChild(outerId, 'container');
+
+    // Try to move outer into inner — would create a cycle
+    useEditor.getState().move(outerId, innerId, 0);
+
+    // inner should still be a child of outer, not the other way around
+    const outerChildren = useEditor.getState().project.components[outerId].children;
+    expect(outerChildren).toContain(innerId);
+    // outer should not be a child of inner
+    const innerChildren = useEditor.getState().project.components[innerId].children;
+    expect(innerChildren).not.toContain(outerId);
   });
 });

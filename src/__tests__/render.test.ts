@@ -24,88 +24,114 @@ function makeProjectWithContainer(child: ComponentNode, containerH: number): Pro
   };
 }
 
-describe('render.ts – textarea slice clamping with small height', () => {
-  it('does not throw and does not write below widget bottom when h=1', () => {
+function noCellsBelowWidget(result: ReturnType<typeof render>, id: string) {
+  const grid = result.grid;
+  const rect = result.rects[id];
+  for (let y = rect.y + rect.h; y < grid.length; y++) {
+    for (const cell of grid[y]) {
+      expect(cell.ch).toBe(' ');
+    }
+  }
+}
+
+describe('render.ts – textarea painting', () => {
+  it('does not write below widget bounds at h=1 (no border)', () => {
     const child: ComponentNode = {
-      id: 'ta',
-      type: 'textarea',
-      parentId: 'root',
-      children: [],
+      id: 'ta', type: 'textarea', parentId: 'root', children: [],
       props: { value: 'line1\nline2\nline3', border: 'none' },
     };
-    const project = makeProjectWithContainer(child, 1);
-    let result: ReturnType<typeof render>;
-    expect(() => { result = render(project); }).not.toThrow();
-    // Row 1 and beyond should be empty (no textarea content written outside widget)
-    const grid = result!.grid;
-    const rect = result!.rects['ta'];
-    // Everything below rect.y + rect.h should not have textarea content
-    for (let y = rect.y + rect.h; y < grid.length; y++) {
-      for (const cell of grid[y]) {
-        // Cell should not have content painted by the textarea (it's all spaces at default)
-        expect(cell.ch).toBe(' ');
-      }
-    }
+    const result = render(makeProjectWithContainer(child, 1));
+    noCellsBelowWidget(result, 'ta');
   });
 
-  it('does not throw when h=0', () => {
+  it('renders content at h=2 (no border) — 2 lines visible', () => {
     const child: ComponentNode = {
-      id: 'ta',
-      type: 'textarea',
-      parentId: 'root',
-      children: [],
+      id: 'ta', type: 'textarea', parentId: 'root', children: [],
+      props: { value: 'hello\nworld\nextra', border: 'none' },
+    };
+    const result = render(makeProjectWithContainer(child, 2));
+    const rect = result.rects['ta'];
+    // With no border and h=2, two lines (at rect.y and rect.y+1) should be visible
+    const row0 = result.grid[rect.y].map(c => c.ch).join('').trim();
+    const row1 = result.grid[rect.y + 1].map(c => c.ch).join('').trim();
+    expect(row0).toContain('hello');
+    expect(row1).toContain('world');
+    noCellsBelowWidget(result, 'ta');
+  });
+
+  it('does not throw at h=0', () => {
+    const child: ComponentNode = {
+      id: 'ta', type: 'textarea', parentId: 'root', children: [],
       props: { value: 'line1\nline2', border: 'none' },
     };
-    const project = makeProjectWithContainer(child, 0);
-    expect(() => render(project)).not.toThrow();
+    expect(() => render(makeProjectWithContainer(child, 0))).not.toThrow();
   });
 });
 
-describe('render.ts – list slice clamping with small height', () => {
-  it('does not write list items below widget bottom when h=1', () => {
+describe('render.ts – list painting', () => {
+  it('does not write below widget bounds at h=1 (no border)', () => {
     const child: ComponentNode = {
-      id: 'li',
-      type: 'list',
-      parentId: 'root',
-      children: [],
+      id: 'li', type: 'list', parentId: 'root', children: [],
       props: { items: ['alpha', 'beta', 'gamma'], border: 'none' },
     };
-    const project = makeProjectWithContainer(child, 1);
-    let result: ReturnType<typeof render>;
-    expect(() => { result = render(project); }).not.toThrow();
-    const grid = result!.grid;
-    const rect = result!.rects['li'];
-    for (let y = rect.y + rect.h; y < grid.length; y++) {
-      for (const cell of grid[y]) {
-        expect(cell.ch).toBe(' ');
-      }
-    }
+    const result = render(makeProjectWithContainer(child, 1));
+    noCellsBelowWidget(result, 'li');
+  });
+
+  it('renders items at h=2 (no border) — 2 items visible', () => {
+    const child: ComponentNode = {
+      id: 'li', type: 'list', parentId: 'root', children: [],
+      props: { items: ['alpha', 'beta', 'gamma'], border: 'none' },
+    };
+    const result = render(makeProjectWithContainer(child, 2));
+    const rect = result.rects['li'];
+    const row0 = result.grid[rect.y].map(c => c.ch).join('').trim();
+    const row1 = result.grid[rect.y + 1].map(c => c.ch).join('').trim();
+    expect(row0).toContain('alpha');
+    expect(row1).toContain('beta');
+    noCellsBelowWidget(result, 'li');
   });
 });
 
-describe('render.ts – table slice clamping with small height', () => {
-  it('does not write table rows below widget bottom when h=3', () => {
+describe('render.ts – table painting', () => {
+  it('does not write below widget bounds at h=1', () => {
     const child: ComponentNode = {
-      id: 'tbl',
-      type: 'table',
-      parentId: 'root',
-      children: [],
-      props: {
-        columns: ['A', 'B'],
-        rows: [['1', '2'], ['3', '4'], ['5', '6']],
-        border: 'none',
-      },
+      id: 'tbl', type: 'table', parentId: 'root', children: [],
+      props: { columns: ['A', 'B'], rows: [['1', '2'], ['3', '4']], border: 'none' },
     };
-    const project = makeProjectWithContainer(child, 3);
-    let result: ReturnType<typeof render>;
-    expect(() => { result = render(project); }).not.toThrow();
-    const grid = result!.grid;
-    const rect = result!.rects['tbl'];
-    // Rows below widget should be space
-    for (let y = rect.y + rect.h; y < grid.length; y++) {
-      for (const cell of grid[y]) {
-        expect(cell.ch).toBe(' ');
-      }
-    }
+    const result = render(makeProjectWithContainer(child, 1));
+    noCellsBelowWidget(result, 'tbl');
+  });
+
+  it('does not write below widget bounds at h=2', () => {
+    const child: ComponentNode = {
+      id: 'tbl', type: 'table', parentId: 'root', children: [],
+      props: { columns: ['A', 'B'], rows: [['1', '2'], ['3', '4']], border: 'none' },
+    };
+    const result = render(makeProjectWithContainer(child, 2));
+    noCellsBelowWidget(result, 'tbl');
+  });
+
+  it('does not write below widget bounds at h=2 (with single border)', () => {
+    const child: ComponentNode = {
+      id: 'tbl', type: 'table', parentId: 'root', children: [],
+      props: { columns: ['A', 'B'], rows: [['1', '2'], ['3', '4']], border: 'single' },
+    };
+    const result = render(makeProjectWithContainer(child, 2));
+    noCellsBelowWidget(result, 'tbl');
+  });
+
+  it('renders header and separator when h is sufficient (no border)', () => {
+    const child: ComponentNode = {
+      id: 'tbl', type: 'table', parentId: 'root', children: [],
+      props: { columns: ['Name'], rows: [['alice'], ['bob']], border: 'none' },
+    };
+    const result = render(makeProjectWithContainer(child, 4));
+    const rect = result.rects['tbl'];
+    const headerRow = result.grid[rect.y].map(c => c.ch).join('').trim();
+    const sepRow = result.grid[rect.y + 1].map(c => c.ch).join('').trim();
+    expect(headerRow).toContain('Name');
+    expect(sepRow).toMatch(/─+/);
+    noCellsBelowWidget(result, 'tbl');
   });
 });
