@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { TopBar } from './components/Layout/TopBar';
+import { TopBar, type AppView } from './components/Layout/TopBar';
 import { ComponentLibrary } from './components/ComponentLibrary';
 import { LayersPanel } from './components/LayersPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { TerminalPreview } from './components/TerminalPreview';
 import { CodeView } from './components/CodeView';
+import { TextualLivePreview } from './components/TextualLivePreview';
 import { TimelinePanel } from './components/TimelinePanel';
 
 export default function App() {
-  const [view, setView] = useState<'preview' | 'code'>('preview');
+  const [view, setView] = useState<AppView>('preview');
 
   return (
     <div className="h-full flex flex-col">
@@ -23,7 +24,9 @@ export default function App() {
 
           {/* Workspace */}
           <main className="flex-1 min-w-0 flex">
-            {view === 'preview' ? <TerminalPreview /> : <CodeView />}
+            {view === 'preview' && <TerminalPreview />}
+            {view === 'code' && <CodeView />}
+            {view === 'live' && <TextualLivePreview />}
           </main>
 
           {/* Right sidebar */}

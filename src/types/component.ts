@@ -158,6 +158,16 @@ export interface TimelineTransition {
   label?: string;
 }
 
+export interface ComponentVariant {
+  id: string;
+  name: string;
+  description?: string;
+  rootType: ComponentType;
+  rootNodeId: string;
+  nodes: Record<string, ComponentNode>;
+  createdAt: number;
+}
+
 export interface ProjectState {
   // Active-screen data (kept at top level for renderer / exporter compat)
   rootId: string;
@@ -171,6 +181,8 @@ export interface ProjectState {
   // Flow timeline
   timelineSteps?: TimelineStep[];
   timelineTransitions?: TimelineTransition[];
+  // Reusable component variants
+  variants?: ComponentVariant[];
 }
 
 export type ThemeName = 'dracula' | 'solarized-dark' | 'tokyo-night' | 'mono';

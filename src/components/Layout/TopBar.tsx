@@ -10,12 +10,14 @@ const THEMES: { value: ThemeName; label: string }[] = [
   { value: 'mono', label: 'Mono' },
 ];
 
+export type AppView = 'preview' | 'code' | 'live';
+
 export function TopBar({
   view,
   setView,
 }: {
-  view: 'preview' | 'code';
-  setView: (v: 'preview' | 'code') => void;
+  view: AppView;
+  setView: (v: AppView) => void;
 }) {
   const { project, undo, redo, reset, setTheme, exportJson, loadFromJson, setTermSize, past, future } =
     useEditor();
@@ -127,6 +129,16 @@ export function TopBar({
             onClick={() => setView('code')}
           >
             Code
+          </button>
+          <button
+            className={clsx(
+              'px-3 py-1 text-xs',
+              view === 'live' ? 'bg-accent text-ink-900 font-semibold' : 'bg-ink-700 hover:bg-ink-600',
+            )}
+            onClick={() => setView('live')}
+            title="Run generated Textual code in-browser via Pyodide (WASM)"
+          >
+            ⚡ Live
           </button>
         </div>
 

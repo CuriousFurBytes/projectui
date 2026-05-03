@@ -78,3 +78,80 @@ export async function runPython(src: string): Promise<string> {
   }
   return buf.join('\n');
 }
+
+// Inspect a generated Textual app by running it with stub widgets.
+// Returns a text representation of the widget tree and any errors.
+export async function runTextualInspect(generatedCode: string): Promise<string> {
+  const stubs = `
+import re as _re
+
+class _W:
+    def __init__(self, *args, **kwargs):
+        self._wid = kwargs.get('id', '')
+        self._cls = kwargs.get('classes', '')
+        self._children = [a for a in args if isinstance(a, _W)]
+        self._label = next((a for a in args if isinstance(a, str)), '')
+    def _render(self, depth=0):
+        pad = '  ' * depth
+        name = type(self).__name__
+        info = f' {repr(self._label)}' if self._label else ''
+        id_info = f'  #{self._wid}' if self._wid else ''
+        lines = [f'{pad}{name}{info}{id_info}']
+        for child in self._children:
+            lines.extend(child._render(depth + 1))
+        return lines
+
+_widget_names = [
+    'Vertical','Horizontal','Static','Button','Input','TextArea',
+    'Checkbox','Select','ListView','ListItem','Label','Tabs','Tab',
+    'ProgressBar','DataTable',
+]
+for _n in _widget_names:
+    globals()[_n] = type(_n, (_W,), {})
+
+class ComposeResult: pass
+
+class _FakeQueryResult:
+    def update(self, **kw): pass
+    def add_columns(self, *a): pass
+    def add_row(self, *a): pass
+    progress = 0
+
+class App:
+    CSS = ''
+    def compose(self): return iter([])
+    def on_mount(self): pass
+    def query_one(self, *a, **kw): return _FakeQueryResult()
+    def run(self): pass
+
+_src = ${JSON.stringify(generatedCode)}
+_lines = _src.split('\\n')
+_filtered = [l for l in _lines
+             if not _re.match(r'^from textual', l)
+             and not _re.match(r'^import textual', l)
+             and l.strip() != 'if __name__ == "__main__":']
+_cleaned = '\\n'.join(_filtered).replace("    GeneratedApp().run()", "")
+
+exec(_cleaned)
+
+_app = GeneratedApp()
+_widgets = list(_app.compose())
+print("Widget tree:")
+for _w in _widgets:
+    if isinstance(_w, _W):
+        for _line in _w._render(1):
+            print(_line)
+    else:
+        print(f'  {type(_w).__name__}')
+
+try:
+    _app.on_mount()
+    print("\\n\\u2713 on_mount() ran without errors")
+except Exception as _e:
+    print(f"\\n\\u26a0 on_mount() raised: {_e}")
+
+_cls_count = len([l for l in _lines if l.strip().startswith('class ')])
+print(f"\\nSummary: {len(_widgets)} top-level widget(s), {_cls_count} class(es) defined")
+`;
+  return runPython(stubs);
+}

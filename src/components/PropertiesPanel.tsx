@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import type {
@@ -90,8 +91,12 @@ function ColorSelect({
 
 export function PropertiesPanel() {
   const node = useEditor((s) => (s.selectedId ? s.project.components[s.selectedId] ?? null : null));
+  const rootId = useEditor((s) => s.project.rootId);
   const updateProps = useEditor((s) => s.updateProps);
   const rename = useEditor((s) => s.rename);
+  const saveVariant = useEditor((s) => s.saveVariant);
+  const [variantName, setVariantName] = useState('');
+  const [savingVariant, setSavingVariant] = useState(false);
 
   if (!node) {
     return (
@@ -330,6 +335,62 @@ export function PropertiesPanel() {
             </label>
           </div>
         </Section>
+
+        {/* Save as Variant — not available for root node */}
+        {node.id !== rootId && (
+          <div className="border-t border-ink-600 p-3">
+            <div className="panel-header !border-b-0 !py-1.5 !px-0 mb-2">Variants</div>
+            {savingVariant ? (
+              <div className="flex gap-1">
+                <input
+                  className="input flex-1 text-xs"
+                  placeholder="Variant name…"
+                  value={variantName}
+                  autoFocus
+                  onChange={(e) => setVariantName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && variantName.trim()) {
+                      saveVariant(node.id, variantName.trim());
+                      setVariantName('');
+                      setSavingVariant(false);
+                    } else if (e.key === 'Escape') {
+                      setVariantName('');
+                      setSavingVariant(false);
+                    }
+                  }}
+                />
+                <button
+                  className="btn text-xs"
+                  disabled={!variantName.trim()}
+                  onClick={() => {
+                    saveVariant(node.id, variantName.trim());
+                    setVariantName('');
+                    setSavingVariant(false);
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  className="btn text-xs"
+                  onClick={() => {
+                    setVariantName('');
+                    setSavingVariant(false);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn w-full text-xs"
+                onClick={() => setSavingVariant(true)}
+                title="Save this component and its children as a reusable variant"
+              >
+                ◈ Save as Variant
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

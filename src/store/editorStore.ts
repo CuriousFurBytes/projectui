@@ -4,6 +4,7 @@ import type {
   ComponentNode,
   ComponentProps,
   ComponentType,
+  ComponentVariant,
   Layer,
   ProjectState,
   ThemeName,
@@ -12,6 +13,7 @@ import type {
 } from '@/types/component';
 import { getDef, makeNode } from '@/lib/componentDefs';
 import { uid } from '@/lib/id';
+import { variantFromSubtree, cloneSubtreeWithNewIds } from '@/lib/variantUtils';
 
 const STORAGE_KEY = 'tui-builder.project.v1';
 
@@ -192,6 +194,10 @@ interface EditorState {
   addTimelineTransition: (fromStepId: string, toStepId: string, event: TimelineTransition['event'], trigger?: string, label?: string) => void;
   removeTimelineTransition: (transId: string) => void;
   updateTimelineTransition: (transId: string, patch: Partial<TimelineTransition>) => void;
+  // Variant actions
+  saveVariant: (nodeId: string, name: string) => void;
+  deleteVariant: (variantId: string) => void;
+  instantiateVariant: (variantId: string, parentId: string, index?: number) => string;
 }
 
 const cloneProject = (p: ProjectState): ProjectState => JSON.parse(JSON.stringify(p)) as ProjectState;
@@ -570,6 +576,54 @@ export const useEditor = create<EditorState>()(
         const project = { ...state.project, timelineTransitions };
         saveProject(project);
         set({ ...next, project });
+      },
+
+      // ── Variant actions ─────────────────────────────────────────────────
+
+      saveVariant: (nodeId, name) => {
+        const state = get();
+        const node = state.project.components[nodeId];
+        if (!node) return;
+        const variant: ComponentVariant = variantFromSubtree(state.project.components, nodeId, name);
+        const variants = [...(state.project.variants ?? []), variant];
+        const project = { ...state.project, variants };
+        saveProject(project);
+        set({ project });
+      },
+
+      deleteVariant: (variantId) => {
+        const state = get();
+        const variants = (state.project.variants ?? []).filter((v) => v.id !== variantId);
+        const project = { ...state.project, variants };
+        saveProject(project);
+        set({ project });
+      },
+
+      instantiateVariant: (variantId, parentId, index) => {
+        const state = get();
+        const variant = (state.project.variants ?? []).find((v) => v.id === variantId);
+        const parent = state.project.components[parentId];
+        if (!variant || !parent) return '';
+        try {
+          if (!getDef(parent.type).acceptsChildren) return '';
+        } catch {
+          return '';
+        }
+        const { nodes: cloned, rootId: newRootId } = cloneSubtreeWithNewIds(
+          variant.nodes,
+          variant.rootNodeId,
+          parentId,
+        );
+        const next = pushHistory(state);
+        const components = { ...state.project.components, ...cloned };
+        const newChildren = [...parent.children];
+        const at = index ?? newChildren.length;
+        newChildren.splice(at, 0, newRootId);
+        components[parentId] = { ...parent, children: newChildren };
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: newRootId });
+        return newRootId;
       },
     }),
     { name: 'tui-builder' },

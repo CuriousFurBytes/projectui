@@ -68,6 +68,7 @@ export function TerminalPreview() {
   const select = useEditor((s) => s.select);
   const setHover = useEditor((s) => s.setHover);
   const addChild = useEditor((s) => s.addChild);
+  const instantiateVariant = useEditor((s) => s.instantiateVariant);
 
   const theme = getTheme(project.theme);
   const result = useMemo(() => render(project), [project]);
@@ -126,7 +127,9 @@ export function TerminalPreview() {
         style={{ background: theme.bg, color: theme.fg }}
         onClick={() => select(null)}
         onDragOver={(e) => {
-          if (!e.dataTransfer.types.includes('application/x-tui-component')) return;
+          const isComponent = e.dataTransfer.types.includes('application/x-tui-component');
+          const isVariant = e.dataTransfer.types.includes('application/x-tui-variant');
+          if (!isComponent && !isVariant) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'copy';
           const target = findDropTarget(e);
@@ -134,6 +137,14 @@ export function TerminalPreview() {
         }}
         onDragLeave={() => setDragOverId(null)}
         onDrop={(e) => {
+          const variantId = e.dataTransfer.getData('application/x-tui-variant');
+          if (variantId) {
+            e.preventDefault();
+            const target = findDropTarget(e);
+            if (target) instantiateVariant(variantId, target.parentId, target.index);
+            setDragOverId(null);
+            return;
+          }
           const type = e.dataTransfer.getData('application/x-tui-component');
           if (!type || !KNOWN_TYPES.has(type)) return;
           e.preventDefault();
