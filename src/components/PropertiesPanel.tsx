@@ -4,7 +4,10 @@ import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import type {
   AnsiColor,
+  AnimationDirection,
+  AnimationType,
   BorderStyle,
+  ColorAnimation,
   ComponentNode,
   ComponentProps,
   Direction,
@@ -14,6 +17,28 @@ import type {
   TitleAlign,
   ToastVariant,
 } from '@/types/component';
+
+const DEFAULT_ANIMATION: ColorAnimation = {
+  enabled: false,
+  type: 'solid',
+  direction: 'ltr',
+  durationMs: 1500,
+  loop: true,
+  loopCount: 3,
+};
+
+const ANIMATION_TYPES: { value: AnimationType; label: string }[] = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'gradient', label: 'Gradient' },
+  { value: 'rainbow', label: 'Rainbow' },
+];
+
+const ANIMATION_DIRECTIONS: { value: AnimationDirection; label: string }[] = [
+  { value: 'ltr', label: 'Left \u2192 Right' },
+  { value: 'rtl', label: 'Right \u2192 Left' },
+  { value: 'center-out', label: 'Center \u2192 Sides' },
+  { value: 'sides-in', label: 'Sides \u2192 Center' },
+];
 
 const ANSI_COLORS: AnsiColor[] = [
   'default',
@@ -86,6 +111,87 @@ function ColorSelect({
         ))}
       </select>
     </Field>
+  );
+}
+
+function AnimationSection({
+  animation,
+  onChange,
+}: {
+  animation: ColorAnimation;
+  onChange: (a: ColorAnimation) => void;
+}) {
+  const set = <K extends keyof ColorAnimation>(key: K, value: ColorAnimation[K]) =>
+    onChange({ ...animation, [key]: value });
+
+  return (
+    <Section title="Animation">
+      <div className="col-span-2 flex items-center gap-2">
+        <input
+          id="anim-enabled"
+          type="checkbox"
+          checked={animation.enabled}
+          onChange={(e) => set('enabled', e.target.checked)}
+        />
+        <label htmlFor="anim-enabled" className="text-xs">Enable color animation</label>
+      </div>
+      {animation.enabled && (
+        <>
+          <Field label="Type">
+            <select
+              className="input"
+              value={animation.type}
+              onChange={(e) => set('type', e.target.value as AnimationType)}
+            >
+              {ANIMATION_TYPES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Direction">
+            <select
+              className="input"
+              value={animation.direction}
+              onChange={(e) => set('direction', e.target.value as AnimationDirection)}
+            >
+              {ANIMATION_DIRECTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Duration (ms)">
+            <input
+              type="number"
+              min={100}
+              step={100}
+              className="input"
+              value={animation.durationMs}
+              onChange={(e) => set('durationMs', Math.max(100, Number(e.target.value) || 1500))}
+            />
+          </Field>
+          <div className="col-span-2 flex items-center gap-2">
+            <input
+              id="anim-loop"
+              type="checkbox"
+              checked={animation.loop}
+              onChange={(e) => set('loop', e.target.checked)}
+            />
+            <label htmlFor="anim-loop" className="text-xs">Loop forever</label>
+          </div>
+          {!animation.loop && (
+            <Field label="Loop count">
+              <input
+                type="number"
+                min={1}
+                className="input"
+                value={animation.loopCount ?? 3}
+                onChange={(e) => set('loopCount', Math.max(1, Number(e.target.value) || 1))}
+              />
+            </Field>
+          )}
+        </>
+      )}
+    </Section>
   );
 }
 
@@ -309,6 +415,14 @@ export function PropertiesPanel() {
         </Section>
 
         <ContentSection node={node} />
+
+        {/* Animation */}
+        {(['text', 'asciitext', 'progressbar'] as const).includes(node.type as 'text' | 'asciitext' | 'progressbar') && (
+          <AnimationSection
+            animation={p.animation ?? DEFAULT_ANIMATION}
+            onChange={(anim) => setProp('animation', anim)}
+          />
+        )}
 
         {/* Behavior */}
         <Section title="Behavior">

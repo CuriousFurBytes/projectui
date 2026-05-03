@@ -30,6 +30,17 @@ export type Align = 'start' | 'center' | 'end' | 'stretch';
 export type TitleAlign = 'left' | 'center' | 'right';
 export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
 export type SpinnerStyle = 'dots' | 'line' | 'braille' | 'arc';
+export type AnimationType = 'solid' | 'gradient' | 'rainbow';
+export type AnimationDirection = 'ltr' | 'rtl' | 'center-out' | 'sides-in';
+
+export interface ColorAnimation {
+  enabled: boolean;
+  type: AnimationType;
+  direction: AnimationDirection;
+  durationMs: number;
+  loop: boolean;
+  loopCount?: number;
+}
 
 // 16 standard ANSI palette names + 'default'.
 export type AnsiColor =
@@ -115,6 +126,9 @@ export interface ComponentProps {
 
   // Divider / separator orientation
   orientation?: 'horizontal' | 'vertical';
+
+  // Color animation (text, asciitext, progressbar)
+  animation?: ColorAnimation;
 
   // Behavior
   focusable?: boolean;

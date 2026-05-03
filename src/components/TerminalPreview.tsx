@@ -5,7 +5,10 @@ import { render, type Cell, type Rect } from '@/renderer/render';
 import { getTheme } from '@/lib/themes';
 import type { AnsiColor, ComponentType } from '@/types/component';
 import { getDef, COMPONENT_DEFS } from '@/lib/componentDefs';
+import { getAnimatedColors } from '@/lib/colorAnimation';
 import clsx from 'clsx';
+
+const ANIMATED_TYPES = new Set(['text', 'asciitext', 'progressbar']);
 
 const KNOWN_TYPES = new Set<string>(COMPONENT_DEFS.map((d) => d.type));
 
@@ -72,6 +75,45 @@ export function TerminalPreview() {
 
   const theme = getTheme(project.theme);
   const result = useMemo(() => render(project), [project]);
+
+  // Animation loop
+  const animEpochRef = useRef<number>(performance.now());
+  const [nowMs, setNowMs] = useState<number>(() => performance.now());
+
+  const hasAnimations = useMemo(() =>
+    Object.values(project.components).some(
+      n => n.props.animation?.enabled && ANIMATED_TYPES.has(n.type),
+    ),
+  [project.components]);
+
+  useEffect(() => {
+    if (!hasAnimations) return;
+    const id = setInterval(() => setNowMs(performance.now()), 50);
+    return () => clearInterval(id);
+  }, [hasAnimations]);
+
+  const animOverlay = useMemo((): Map<string, AnsiColor> | null => {
+    if (!hasAnimations) return null;
+    const overlay = new Map<string, AnsiColor>();
+    const elapsed = nowMs - animEpochRef.current;
+    Object.values(project.components).forEach(node => {
+      const anim = node.props.animation;
+      if (!anim?.enabled || !ANIMATED_TYPES.has(node.type)) return;
+      const rect = result.rects[node.id];
+      if (!rect) return;
+      const cycleCount = Math.floor(elapsed / anim.durationMs);
+      if (!anim.loop && anim.loopCount != null && cycleCount >= anim.loopCount) return;
+      const tick = (elapsed % anim.durationMs) / anim.durationMs;
+      const colors = getAnimatedColors(anim, rect.w, tick);
+      for (let row = rect.y; row < rect.y + rect.h; row++) {
+        for (let col = rect.x; col < rect.x + rect.w; col++) {
+          const c = colors[col - rect.x];
+          if (c && c !== 'default') overlay.set(`${row},${col}`, c);
+        }
+      }
+    });
+    return overlay;
+  }, [hasAnimations, nowMs, project.components, result.rects]);
 
   const probeRef = useRef<HTMLSpanElement>(null);
   const cell = useCellSize(probeRef);
@@ -165,7 +207,7 @@ export function TerminalPreview() {
           {'M'.repeat(80)}
         </span>
 
-        <CellGrid grid={result.grid} theme={theme} fontSize={14} lineHeight={18} />
+        <CellGrid grid={result.grid} theme={theme} fontSize={14} lineHeight={18} animOverlay={animOverlay} />
 
         {/* Hover and drag-target overlays (no click handling, behind hitboxes) */}
         <Overlay
@@ -215,11 +257,13 @@ function CellGrid({
   theme,
   fontSize,
   lineHeight,
+  animOverlay,
 }: {
   grid: Cell[][];
   theme: ReturnType<typeof getTheme>;
   fontSize: number;
   lineHeight: number;
+  animOverlay?: Map<string, AnsiColor> | null;
 }) {
   const colorOf = (c?: AnsiColor) => {
     if (!c || c === 'default') return undefined;
@@ -235,8 +279,9 @@ function CellGrid({
       {grid.map((row, ri) => {
         const runs: { text: string; fg?: string; bg?: string; bold?: boolean }[] = [];
         let cur: (typeof runs)[number] | null = null;
-        for (const cell of row) {
-          const fg = colorOf(cell.fg);
+        row.forEach((cell, ci) => {
+          const animColor = animOverlay?.get(`${ri},${ci}`);
+          const fg = colorOf(animColor ?? cell.fg);
           const bg = colorOf(cell.bg);
           if (cur && cur.fg === fg && cur.bg === bg && cur.bold === !!cell.bold) {
             cur.text += cell.ch;
@@ -244,7 +289,7 @@ function CellGrid({
             cur = { text: cell.ch, fg, bg, bold: !!cell.bold };
             runs.push(cur);
           }
-        }
+        });
         return (
           <div key={ri} style={{ height: lineHeight }}>
             {runs.map((run, i) => (
