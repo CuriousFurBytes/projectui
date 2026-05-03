@@ -5,9 +5,14 @@ import clsx from 'clsx';
 import { useState } from 'react';
 
 export function LayersPanel() {
-  const { project, selectedId, select, setHidden, setLocked, remove, move } = useEditor();
+  const { project, selectedId, select, setHidden, setLocked, remove, move, switchLayer, addLayer, removeLayer, renameLayer } = useEditor();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ parentId: string; index: number } | null>(null);
+  const [editingLayerIdx, setEditingLayerIdx] = useState<number | null>(null);
+  const [editingLayerName, setEditingLayerName] = useState('');
+
+  const layers = project.layers ?? [];
+  const activeIdx = project.activeLayerIndex ?? 0;
 
   const renderNode = (node: ComponentNode, depth: number) => {
     const def = getDef(node.type);
@@ -114,9 +119,79 @@ export function LayersPanel() {
   };
 
   const root = project.components[project.rootId];
+
   return (
     <section className="panel flex-1 flex flex-col min-h-0">
+      {/* Screen tabs header */}
       <div className="panel-header">
+        <span>Screens</span>
+        <button
+          className="text-[10px] text-accent hover:text-white"
+          title="Add screen"
+          onClick={() => addLayer()}
+        >
+          + screen
+        </button>
+      </div>
+
+      {/* Screen tab strip */}
+      <div className="flex flex-wrap gap-1 px-2 py-1 border-b border-ink-600">
+        {layers.map((layer, idx) => (
+          <div key={layer.id} className="flex items-center gap-0.5">
+            {editingLayerIdx === idx ? (
+              <input
+                className="input text-[10px] px-1 py-0 w-20 h-5"
+                autoFocus
+                value={editingLayerName}
+                onChange={(e) => setEditingLayerName(e.target.value)}
+                onBlur={() => {
+                  if (editingLayerName.trim()) renameLayer(idx, editingLayerName.trim());
+                  setEditingLayerIdx(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (editingLayerName.trim()) renameLayer(idx, editingLayerName.trim());
+                    setEditingLayerIdx(null);
+                  } else if (e.key === 'Escape') {
+                    setEditingLayerIdx(null);
+                  }
+                }}
+              />
+            ) : (
+              <button
+                className={clsx(
+                  'text-[10px] px-2 py-0.5 rounded',
+                  idx === activeIdx
+                    ? 'bg-accent text-white'
+                    : 'bg-ink-700 text-ink-300 hover:bg-ink-600',
+                )}
+                onClick={() => switchLayer(idx)}
+                onDoubleClick={() => {
+                  setEditingLayerIdx(idx);
+                  setEditingLayerName(layer.name);
+                }}
+                title="Double-click to rename"
+              >
+                {layer.name}
+              </button>
+            )}
+            {layers.length > 1 && (
+              <button
+                className="text-[10px] text-ink-400 hover:text-red-400"
+                title="Remove screen"
+                onClick={() => {
+                  if (confirm(`Remove screen "${layer.name}"?`)) removeLayer(idx);
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Layers tree */}
+      <div className="panel-header !py-1">
         <span>Layers</span>
         <span className="text-[10px] normal-case tracking-normal text-ink-300">
           {Object.keys(project.components).length} nodes

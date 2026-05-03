@@ -14,11 +14,22 @@ export type ComponentType =
   | 'tabs'
   | 'statusbar'
   | 'progressbar'
-  | 'modal';
+  | 'modal'
+  | 'spinner'
+  | 'divider'
+  | 'toast'
+  | 'grid'
+  | 'viewport'
+  | 'timer'
+  | 'filepicker'
+  | 'asciitext';
 
 export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick';
 export type Direction = 'row' | 'column';
 export type Align = 'start' | 'center' | 'end' | 'stretch';
+export type TitleAlign = 'left' | 'center' | 'right';
+export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
+export type SpinnerStyle = 'dots' | 'line' | 'braille' | 'arc';
 
 // 16 standard ANSI palette names + 'default'.
 export type AnsiColor =
@@ -43,6 +54,14 @@ export type AnsiColor =
 // `auto` = intrinsic size; `fill` = take remaining space; number = chars/rows.
 export type Size = number | 'auto' | 'fill';
 
+// Inline-styled text span for rich text rendering.
+export interface RichSpan {
+  text: string;
+  fg?: AnsiColor;
+  bg?: AnsiColor;
+  bold?: boolean;
+}
+
 export interface ComponentProps {
   // Layout
   direction?: Direction;
@@ -53,15 +72,28 @@ export interface ComponentProps {
   justify?: Align;
   gap?: number;
 
+  // Free positioning (absolute mode)
+  absolute?: boolean;
+  x?: number;
+  y?: number;
+
   // Style
   border?: BorderStyle;
+  borderColor?: AnsiColor;
   title?: string;
+  titleAlign?: TitleAlign;
+  titleColor?: AnsiColor;
   fg?: AnsiColor;
   bg?: AnsiColor;
   bold?: boolean;
 
+  // Grid layout (for type=grid)
+  gridCols?: number;
+  gridGap?: number;
+
   // Content
   text?: string;
+  richSpans?: RichSpan[];
   placeholder?: string;
   label?: string;
   items?: string[];
@@ -71,6 +103,18 @@ export interface ComponentProps {
   progress?: number; // 0..1
   columns?: string[];
   rows?: string[][];
+
+  // Spinner
+  spinnerStyle?: SpinnerStyle;
+
+  // Toast
+  toastVariant?: ToastVariant;
+
+  // Timer
+  timerValue?: string;
+
+  // Divider / separator orientation
+  orientation?: 'horizontal' | 'vertical';
 
   // Behavior
   focusable?: boolean;
@@ -89,12 +133,44 @@ export interface ComponentNode {
   name?: string;
 }
 
+// One screen / artboard in the project.
+export interface Layer {
+  id: string;
+  name: string;
+  rootId: string;
+  components: Record<string, ComponentNode>;
+}
+
+// A named step in the flow timeline.
+export interface TimelineStep {
+  id: string;
+  layerId: string;
+  label?: string;
+}
+
+// A transition edge between two timeline steps.
+export interface TimelineTransition {
+  id: string;
+  fromStepId: string;
+  toStepId: string;
+  event: 'keypress' | 'click' | 'custom';
+  trigger?: string;
+  label?: string;
+}
+
 export interface ProjectState {
+  // Active-screen data (kept at top level for renderer / exporter compat)
   rootId: string;
   components: Record<string, ComponentNode>;
   termCols: number;
   termRows: number;
   theme: ThemeName;
+  // Multi-screen (optional for backward compat with old saves / test fixtures)
+  layers?: Layer[];
+  activeLayerIndex?: number;
+  // Flow timeline
+  timelineSteps?: TimelineStep[];
+  timelineTransitions?: TimelineTransition[];
 }
 
 export type ThemeName = 'dracula' | 'solarized-dark' | 'tokyo-night' | 'mono';

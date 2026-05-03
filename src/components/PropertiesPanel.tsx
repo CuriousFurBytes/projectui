@@ -7,7 +7,11 @@ import type {
   ComponentNode,
   ComponentProps,
   Direction,
+  RichSpan,
   Size,
+  SpinnerStyle,
+  TitleAlign,
+  ToastVariant,
 } from '@/types/component';
 
 const ANSI_COLORS: AnsiColor[] = [
@@ -31,6 +35,7 @@ const ANSI_COLORS: AnsiColor[] = [
 ];
 
 const BORDER_STYLES: BorderStyle[] = ['none', 'single', 'double', 'rounded', 'thick'];
+const TITLE_ALIGNS: TitleAlign[] = ['left', 'center', 'right'];
 
 function sizeToString(s: Size | undefined): string {
   if (s === undefined) return 'fill';
@@ -43,9 +48,9 @@ function stringToSize(s: string): Size {
   return Number.isFinite(n) && n > 0 ? n : 'auto';
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, span2 }: { label: string; children: ReactNode; span2?: boolean }) {
   return (
-    <label className="flex flex-col gap-1">
+    <label className={span2 ? 'col-span-2 flex flex-col gap-1' : 'flex flex-col gap-1'}>
       <span className="label">{label}</span>
       {children}
     </label>
@@ -58,6 +63,28 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <div className="panel-header !border-b-0 !py-1.5">{title}</div>
       <div className="px-3 py-2 grid grid-cols-2 gap-3">{children}</div>
     </div>
+  );
+}
+
+function ColorSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: AnsiColor;
+  onChange: (v: AnsiColor) => void;
+}) {
+  return (
+    <Field label={label}>
+      <select className="input" value={value ?? 'default'} onChange={(e) => onChange(e.target.value as AnsiColor)}>
+        {ANSI_COLORS.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+    </Field>
   );
 }
 
@@ -85,6 +112,8 @@ export function PropertiesPanel() {
   const setProp = <K extends keyof ComponentProps>(key: K, value: ComponentProps[K]) =>
     updateProps(node.id, { [key]: value } as Partial<ComponentProps>);
 
+  const hasBorder = p.border && p.border !== 'none';
+
   return (
     <section className="panel flex-1 flex flex-col min-h-0">
       <div className="panel-header">
@@ -92,6 +121,7 @@ export function PropertiesPanel() {
         <span className="text-[10px] normal-case tracking-normal text-accent">{def.label}</span>
       </div>
       <div className="overflow-auto flex-1">
+        {/* Identity */}
         <Section title="Identity">
           <div className="col-span-2">
             <Field label="Name">
@@ -110,6 +140,7 @@ export function PropertiesPanel() {
           </div>
         </Section>
 
+        {/* Layout */}
         <Section title="Layout">
           <Field label="Width">
             <input
@@ -159,8 +190,64 @@ export function PropertiesPanel() {
               </Field>
             </>
           )}
+          {node.type === 'grid' && (
+            <>
+              <Field label="Columns">
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  className="input"
+                  value={p.gridCols ?? 2}
+                  onChange={(e) => setProp('gridCols', Math.max(1, Number(e.target.value) || 2))}
+                />
+              </Field>
+              <Field label="Grid gap">
+                <input
+                  type="number"
+                  min={0}
+                  className="input"
+                  value={p.gridGap ?? 0}
+                  onChange={(e) => setProp('gridGap', Number(e.target.value) || 0)}
+                />
+              </Field>
+            </>
+          )}
+          {/* Free positioning */}
+          <div className="col-span-2 flex items-center gap-2">
+            <input
+              id="absolute"
+              type="checkbox"
+              checked={!!p.absolute}
+              onChange={(e) => setProp('absolute', e.target.checked)}
+            />
+            <label htmlFor="absolute" className="text-xs">
+              Absolute position
+            </label>
+          </div>
+          {p.absolute && (
+            <>
+              <Field label="X">
+                <input
+                  type="number"
+                  className="input"
+                  value={p.x ?? 0}
+                  onChange={(e) => setProp('x', Number(e.target.value) || 0)}
+                />
+              </Field>
+              <Field label="Y">
+                <input
+                  type="number"
+                  className="input"
+                  value={p.y ?? 0}
+                  onChange={(e) => setProp('y', Number(e.target.value) || 0)}
+                />
+              </Field>
+            </>
+          )}
         </Section>
 
+        {/* Style */}
         <Section title="Style">
           <Field label="Border">
             <select
@@ -182,32 +269,27 @@ export function PropertiesPanel() {
               onChange={(e) => setProp('title', e.target.value)}
             />
           </Field>
-          <Field label="Foreground">
-            <select
-              className="input"
-              value={p.fg ?? 'default'}
-              onChange={(e) => setProp('fg', e.target.value as AnsiColor)}
-            >
-              {ANSI_COLORS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Background">
-            <select
-              className="input"
-              value={p.bg ?? 'default'}
-              onChange={(e) => setProp('bg', e.target.value as AnsiColor)}
-            >
-              {ANSI_COLORS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {hasBorder && (
+            <>
+              <Field label="Title align">
+                <select
+                  className="input"
+                  value={p.titleAlign ?? 'left'}
+                  onChange={(e) => setProp('titleAlign', e.target.value as TitleAlign)}
+                >
+                  {TITLE_ALIGNS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <ColorSelect label="Border color" value={p.borderColor} onChange={(v) => setProp('borderColor', v)} />
+              <ColorSelect label="Title color" value={p.titleColor} onChange={(v) => setProp('titleColor', v)} />
+            </>
+          )}
+          <ColorSelect label="Foreground" value={p.fg} onChange={(v) => setProp('fg', v)} />
+          <ColorSelect label="Background" value={p.bg} onChange={(v) => setProp('bg', v)} />
           <div className="col-span-2 flex items-center gap-2">
             <input
               id="bold"
@@ -223,6 +305,7 @@ export function PropertiesPanel() {
 
         <ContentSection node={node} />
 
+        {/* Behavior */}
         <Section title="Behavior">
           <div className="col-span-1 flex items-center gap-2">
             <input
@@ -260,8 +343,6 @@ function ContentSection({ node }: { node: ComponentNode }) {
 
   switch (node.type) {
     case 'text':
-    case 'button':
-    case 'statusbar':
       return (
         <Section title="Content">
           <div className="col-span-2">
@@ -269,6 +350,28 @@ function ContentSection({ node }: { node: ComponentNode }) {
               <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
             </Field>
           </div>
+          <RichSpansEditor spans={p.richSpans} onChange={(s) => setProp('richSpans', s)} />
+        </Section>
+      );
+    case 'button':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Text">
+              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'statusbar':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Text (plain)">
+              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+            </Field>
+          </div>
+          <RichSpansEditor spans={p.richSpans} onChange={(s) => setProp('richSpans', s)} />
         </Section>
       );
     case 'input':
@@ -401,7 +504,183 @@ function ContentSection({ node }: { node: ComponentNode }) {
           </div>
         </Section>
       );
+    case 'spinner':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Label">
+              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+            </Field>
+          </div>
+          <div className="col-span-2">
+            <Field label="Style">
+              <select
+                className="input"
+                value={p.spinnerStyle ?? 'dots'}
+                onChange={(e) => setProp('spinnerStyle', e.target.value as SpinnerStyle)}
+              >
+                {(['dots', 'line', 'braille', 'arc'] as SpinnerStyle[]).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'toast':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Message">
+              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+            </Field>
+          </div>
+          <div className="col-span-2">
+            <Field label="Variant">
+              <select
+                className="input"
+                value={p.toastVariant ?? 'info'}
+                onChange={(e) => setProp('toastVariant', e.target.value as ToastVariant)}
+              >
+                {(['info', 'success', 'warning', 'error'] as ToastVariant[]).map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'timer':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Value (e.g. 01:23:45)">
+              <input className="input" value={p.timerValue ?? '00:00'} onChange={(e) => setProp('timerValue', e.target.value)} />
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'filepicker':
+      return (
+        <Section title="Files">
+          <div className="col-span-2">
+            <Field label="Items (one per line)">
+              <textarea
+                className="input min-h-[80px]"
+                value={(p.items ?? []).join('\n')}
+                onChange={(e) =>
+                  setProp('items', e.target.value.split('\n').map((s) => s.trimEnd()))
+                }
+              />
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'asciitext':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Text">
+              <input
+                className="input"
+                value={p.text ?? ''}
+                placeholder="HELLO"
+                onChange={(e) => setProp('text', e.target.value)}
+              />
+            </Field>
+          </div>
+        </Section>
+      );
+    case 'divider':
+      return (
+        <Section title="Content">
+          <div className="col-span-2">
+            <Field label="Label (optional)">
+              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Orientation">
+            <select
+              className="input"
+              value={p.orientation ?? 'horizontal'}
+              onChange={(e) => setProp('orientation', e.target.value as 'horizontal' | 'vertical')}
+            >
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
+          </Field>
+          <Field label="Label align">
+            <select
+              className="input"
+              value={p.titleAlign ?? 'center'}
+              onChange={(e) => setProp('titleAlign', e.target.value as TitleAlign)}
+            >
+              {(['left', 'center', 'right'] as TitleAlign[]).map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </Field>
+        </Section>
+      );
     default:
       return null;
   }
+}
+
+// ── Rich text span editor ─────────────────────────────────────────────────
+
+function RichSpansEditor({
+  spans,
+  onChange,
+}: {
+  spans?: RichSpan[];
+  onChange: (s: RichSpan[] | undefined) => void;
+}) {
+  const list = spans ?? [];
+
+  const add = () => onChange([...list, { text: 'text', fg: 'default' }]);
+  const remove = (i: number) => {
+    const next = list.filter((_, idx) => idx !== i);
+    onChange(next.length ? next : undefined);
+  };
+  const update = (i: number, patch: Partial<RichSpan>) => {
+    onChange(list.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  };
+
+  return (
+    <div className="col-span-2 flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="label">Rich spans</span>
+        <button className="btn text-[10px] px-1 py-0.5" onClick={add}>+ span</button>
+      </div>
+      {list.map((span, i) => (
+        <div key={i} className="flex gap-1 items-center">
+          <input
+            className="input flex-1 text-xs"
+            value={span.text}
+            placeholder="text"
+            onChange={(e) => update(i, { text: e.target.value })}
+          />
+          <select
+            className="input w-20 text-xs"
+            value={span.fg ?? 'default'}
+            onChange={(e) => update(i, { fg: e.target.value as AnsiColor })}
+          >
+            {ANSI_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            className="input w-20 text-xs"
+            value={span.bg ?? 'default'}
+            onChange={(e) => update(i, { bg: e.target.value as AnsiColor })}
+          >
+            {ANSI_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button
+            className="text-ink-300 hover:text-red-400 text-xs"
+            onClick={() => remove(i)}
+          >✕</button>
+        </div>
+      ))}
+    </div>
+  );
 }

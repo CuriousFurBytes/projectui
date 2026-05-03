@@ -79,3 +79,78 @@ describe('editorStore – move parent validation', () => {
     expect(innerChildren).not.toContain(outerId);
   });
 });
+
+describe('editorStore – timeline migration and history', () => {
+  beforeEach(() => {
+    freshStore();
+  });
+
+  it('migrates older multi-screen projects by creating timeline steps for existing layers', () => {
+    useEditor.getState().loadFromJson(JSON.stringify({
+      rootId: 'root1',
+      components: {
+        root1: {
+          id: 'root1',
+          type: 'container',
+          parentId: null,
+          children: [],
+          props: { direction: 'column', width: 'fill', height: 'fill', border: 'none', padding: 0 },
+        },
+      },
+      layers: [
+        { id: 'layer1', name: 'Home', rootId: 'root1', components: {} },
+        { id: 'layer2', name: 'Settings', rootId: 'root2', components: {} },
+      ],
+      activeLayerIndex: 1,
+      termCols: 80,
+      termRows: 24,
+      theme: 'tokyo-night',
+    }));
+
+    const project = useEditor.getState().project;
+    expect(project.timelineSteps).toHaveLength(2);
+    expect(project.timelineSteps?.map((step) => [step.layerId, step.label])).toEqual([
+      ['layer1', 'Home'],
+      ['layer2', 'Settings'],
+    ]);
+    expect(project.timelineTransitions).toEqual([]);
+    expect(project.activeLayerIndex).toBe(1);
+  });
+
+  it('supports undo and redo for timeline step changes', () => {
+    const layerId = useEditor.getState().project.layers?.[0]?.id;
+    expect(layerId).toBeTruthy();
+
+    useEditor.getState().addTimelineStep(layerId!, 'Extra Step');
+    expect(useEditor.getState().project.timelineSteps?.map((step) => step.label)).toContain('Extra Step');
+
+    useEditor.getState().undo();
+    expect(useEditor.getState().project.timelineSteps?.map((step) => step.label)).not.toContain('Extra Step');
+
+    useEditor.getState().redo();
+    expect(useEditor.getState().project.timelineSteps?.map((step) => step.label)).toContain('Extra Step');
+  });
+
+  it('renames default timeline labels with their layer but preserves custom step labels', () => {
+    useEditor.getState().addLayer();
+
+    const state = useEditor.getState();
+    const secondLayer = state.project.layers?.[1];
+    const defaultStep = state.project.timelineSteps?.find((step) => step.layerId === secondLayer?.id);
+    expect(secondLayer).toBeTruthy();
+    expect(defaultStep?.label).toBe('Screen 2');
+
+    useEditor.getState().renameLayer(1, 'Login');
+
+    let project = useEditor.getState().project;
+    let renamedStep = project.timelineSteps?.find((step) => step.layerId === secondLayer?.id);
+    expect(renamedStep?.label).toBe('Login');
+
+    useEditor.getState().updateTimelineStep(renamedStep!.id, { label: 'Open modal' });
+    useEditor.getState().renameLayer(1, 'Auth');
+
+    project = useEditor.getState().project;
+    renamedStep = project.timelineSteps?.find((step) => step.layerId === secondLayer?.id);
+    expect(renamedStep?.label).toBe('Open modal');
+  });
+});

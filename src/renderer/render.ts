@@ -11,6 +11,7 @@ import type {
   ComponentNode,
   ComponentProps,
   ProjectState,
+  TitleAlign,
 } from '@/types/component';
 import { BOX } from './boxStyles';
 
@@ -71,7 +72,22 @@ function writeText(
   }
 }
 
-function drawBox(grid: Cell[][], rect: Rect, style: BorderStyle, fg?: AnsiColor, bg?: AnsiColor, title?: string) {
+function drawBox(
+  grid: Cell[][],
+  rect: Rect,
+  style: BorderStyle,
+  fg?: AnsiColor,
+  bg?: AnsiColor,
+  title?: string,
+  titleAlign?: TitleAlign,
+  borderColor?: AnsiColor,
+  titleColor?: AnsiColor,
+) {
+  // Use borderColor if specified, falling back to fg for border characters.
+  const bfg = borderColor ?? fg;
+  // Use titleColor if specified, falling back to bfg for title text.
+  const tfg = titleColor ?? bfg;
+
   if (style === 'none' || rect.w < 2 || rect.h < 2) {
     if (bg) {
       for (let yy = rect.y; yy < rect.y + rect.h; yy++)
@@ -87,25 +103,114 @@ function drawBox(grid: Cell[][], rect: Rect, style: BorderStyle, fg?: AnsiColor,
       for (let xx = x; xx < x + w; xx++) setCell(grid, xx, yy, { ch: ' ', bg });
   }
   // corners
-  setCell(grid, x, y, { ch: b.tl, fg, bg });
-  setCell(grid, x + w - 1, y, { ch: b.tr, fg, bg });
-  setCell(grid, x, y + h - 1, { ch: b.bl, fg, bg });
-  setCell(grid, x + w - 1, y + h - 1, { ch: b.br, fg, bg });
+  setCell(grid, x, y, { ch: b.tl, fg: bfg, bg });
+  setCell(grid, x + w - 1, y, { ch: b.tr, fg: bfg, bg });
+  setCell(grid, x, y + h - 1, { ch: b.bl, fg: bfg, bg });
+  setCell(grid, x + w - 1, y + h - 1, { ch: b.br, fg: bfg, bg });
   // edges
   for (let xx = x + 1; xx < x + w - 1; xx++) {
-    setCell(grid, xx, y, { ch: b.h, fg, bg });
-    setCell(grid, xx, y + h - 1, { ch: b.h, fg, bg });
+    setCell(grid, xx, y, { ch: b.h, fg: bfg, bg });
+    setCell(grid, xx, y + h - 1, { ch: b.h, fg: bfg, bg });
   }
   for (let yy = y + 1; yy < y + h - 1; yy++) {
-    setCell(grid, x, yy, { ch: b.v, fg, bg });
-    setCell(grid, x + w - 1, yy, { ch: b.v, fg, bg });
+    setCell(grid, x, yy, { ch: b.v, fg: bfg, bg });
+    setCell(grid, x + w - 1, yy, { ch: b.v, fg: bfg, bg });
   }
   // title
   if (title) {
     const t = ` ${title.trim()} `.slice(0, w - 2);
-    writeText(grid, x + 1, y, t, w - 2, fg, bg, true);
+    const align: TitleAlign = titleAlign ?? 'left';
+    let tx = x + 1;
+    if (align === 'center') tx = x + 1 + Math.floor((w - 2 - t.length) / 2);
+    else if (align === 'right') tx = x + w - 1 - t.length;
+    writeText(grid, tx, y, t, w - 2, tfg, bg, true);
   }
 }
+
+// ─── ASCII art font (3-row, basic uppercase + digits) ────────────────────────
+
+const ASCII_FONT: Record<string, string[]> = {
+  A: [' ▄█▄ ', '█   █', '█████'],
+  B: ['████ ', '████ ', '████ '],
+  C: [' ████', '█    ', ' ████'],
+  D: ['████ ', '█   █', '████ '],
+  E: ['█████', '████ ', '█████'],
+  F: ['█████', '████ ', '█    '],
+  G: [' ████', '█   █', ' ████'],
+  H: ['█   █', '█████', '█   █'],
+  I: ['█████', '  █  ', '█████'],
+  J: ['  ███', '    █', '████ '],
+  K: ['█  █ ', '███  ', '█  █ '],
+  L: ['█    ', '█    ', '█████'],
+  M: ['█   █', '██ ██', '█   █'],
+  N: ['█   █', '██  █', '█   █'],
+  O: [' ███ ', '█   █', ' ███ '],
+  P: ['████ ', '████ ', '█    '],
+  Q: [' ███ ', '█   █', ' ████'],
+  R: ['████ ', '████ ', '█   █'],
+  S: [' ████', ' ███ ', '████ '],
+  T: ['█████', '  █  ', '  █  '],
+  U: ['█   █', '█   █', ' ███ '],
+  V: ['█   █', '█   █', ' █   '],
+  W: ['█   █', '██ ██', '█   █'],
+  X: ['█   █', ' ███ ', '█   █'],
+  Y: ['█   █', ' ███ ', '  █  '],
+  Z: ['████ ', ' ███ ', '  ███'],
+  '0': [' ███ ', '█   █', ' ███ '],
+  '1': [' ██  ', '  █  ', '█████'],
+  '2': ['████ ', ' ███ ', ' ████'],
+  '3': ['████ ', ' ████', '████ '],
+  '4': ['█   █', '█████', '    █'],
+  '5': ['█████', '████ ', ' ████'],
+  '6': [' ████', '████ ', ' ████'],
+  '7': ['█████', '   █ ', '   █ '],
+  '8': [' ███ ', ' ███ ', ' ███ '],
+  '9': [' ████', ' ████', ' ████'],
+  ' ': ['     ', '     ', '     '],
+  '!': ['  █  ', '  █  ', '  ▀  '],
+  '?': [' ███ ', '  ██ ', '  ▀  '],
+  '.': ['     ', '     ', '  █  '],
+  '-': ['     ', ' ███ ', '     '],
+};
+
+function renderAsciiText(
+  grid: Cell[][],
+  rect: Rect,
+  text: string,
+  fg?: AnsiColor,
+  bg?: AnsiColor,
+) {
+  const upper = text.toUpperCase();
+  const charW = 6; // 5 chars + 1 gap
+  let cx = rect.x;
+  for (const ch of upper) {
+    if (cx + charW > rect.x + rect.w) break;
+    const glyph = ASCII_FONT[ch] ?? ASCII_FONT[' ']!;
+    for (let row = 0; row < 3; row++) {
+      const line = glyph[row] ?? '     ';
+      const y = rect.y + row;
+      if (y >= rect.y + rect.h) break;
+      writeText(grid, cx, y, line, charW, fg, bg);
+    }
+    cx += charW;
+  }
+}
+
+// Spinner frames per style
+const SPINNER_FRAMES: Record<string, string[]> = {
+  dots:   ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
+  line:   ['|', '/', '-', '\\'],
+  braille:['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'],
+  arc:    ['◜', '◠', '◝', '◞', '◡', '◟'],
+};
+
+// Toast variant icons and default colors
+const TOAST_STYLE: Record<string, { icon: string; fg: AnsiColor; bg: AnsiColor }> = {
+  info:    { icon: 'ℹ', fg: 'white',      bg: 'blue'   },
+  success: { icon: '✓', fg: 'black',      bg: 'green'  },
+  warning: { icon: '⚠', fg: 'black',      bg: 'yellow' },
+  error:   { icon: '✗', fg: 'white',      bg: 'red'    },
+};
 
 // ────────────────────────────────────────────────────────────────────────
 // Layout
@@ -115,6 +220,7 @@ function intrinsicWidth(node: ComponentNode): number {
   const p = node.props;
   switch (node.type) {
     case 'text':
+      if (p.richSpans?.length) return p.richSpans.reduce((s, sp) => s + sp.text.length, 0);
       return Math.max(1, (p.text ?? '').length);
     case 'button':
       return Math.max(4, (p.text ?? '').length + 4);
@@ -134,6 +240,21 @@ function intrinsicWidth(node: ComponentNode): number {
       return Math.max(10, (p.items ?? []).reduce((m, s) => Math.max(m, s.length + 4), 10));
     case 'table':
       return (p.columns ?? []).reduce((s, c) => s + Math.max(c.length, 4) + 3, 1);
+    case 'spinner':
+      return 3;
+    case 'timer':
+      return Math.max(8, (p.timerValue ?? '00:00').length);
+    case 'divider':
+      return 10;
+    case 'toast':
+      return Math.max(20, (p.text ?? '').length + 6);
+    case 'filepicker':
+      return 30;
+    case 'asciitext':
+      return Math.max(10, (p.text ?? '').length * 6);
+    case 'viewport':
+    case 'grid':
+      return 20;
     default:
       return 10;
   }
@@ -163,6 +284,22 @@ function intrinsicHeight(node: ComponentNode): number {
       return Math.max(3, (p.items ?? []).length + 2);
     case 'table':
       return (p.rows ?? []).length + 3;
+    case 'spinner':
+      return 1;
+    case 'timer':
+      return 1;
+    case 'divider':
+      return 1;
+    case 'toast':
+      return 3;
+    case 'filepicker':
+      return 8;
+    case 'asciitext':
+      return 5;
+    case 'viewport':
+      return 8;
+    case 'grid':
+      return 6;
     default:
       return 5;
   }
@@ -172,7 +309,9 @@ function borderInset(props: ComponentProps): number {
   return props.border && props.border !== 'none' ? 1 : 0;
 }
 
-// Recursive layout. Each call assigns `node.rect` and returns it.
+const LAYOUT_TYPES = new Set(['container', 'modal', 'viewport', 'grid']);
+
+// Recursive layout. Each call assigns node's rect and returns it.
 function layoutNode(
   node: ComponentNode,
   components: Record<string, ComponentNode>,
@@ -180,7 +319,14 @@ function layoutNode(
   rects: Record<string, Rect>,
 ) {
   rects[node.id] = rect;
-  if (node.type !== 'container' && node.type !== 'modal') return;
+  if (!LAYOUT_TYPES.has(node.type)) return;
+
+  // Grid type: 2D grid layout
+  if (node.type === 'grid') {
+    layoutGrid(node, components, rect, rects);
+    return;
+  }
+
   if (node.children.length === 0) return;
 
   const inset = borderInset(node.props);
@@ -194,7 +340,19 @@ function layoutNode(
 
   const children = node.children
     .map((id) => components[id])
-    .filter((c) => c && !c.hidden);
+    .filter((c) => c && !c.hidden && !c.props.absolute);
+
+  // Layout absolute children separately
+  node.children
+    .map((id) => components[id])
+    .filter((c) => c && !c.hidden && c.props.absolute)
+    .forEach((child) => {
+      const ax = innerX + (child.props.x ?? 0);
+      const ay = innerY + (child.props.y ?? 0);
+      const aw = typeof child.props.width === 'number' ? child.props.width : intrinsicWidth(child);
+      const ah = typeof child.props.height === 'number' ? child.props.height : intrinsicHeight(child);
+      layoutNode(child, components, { x: ax, y: ay, w: aw, h: ah }, rects);
+    });
 
   // Compute requested sizes along the main axis.
   const totalGap = gap * Math.max(0, children.length - 1);
@@ -273,6 +431,41 @@ function layoutNode(
   });
 }
 
+function layoutGrid(
+  node: ComponentNode,
+  components: Record<string, ComponentNode>,
+  rect: Rect,
+  rects: Record<string, Rect>,
+) {
+  const cols = Math.max(1, node.props.gridCols ?? 2);
+  const gap = node.props.gridGap ?? 0;
+  const inset = borderInset(node.props);
+  const padding = node.props.padding ?? 0;
+  const innerX = rect.x + inset + padding;
+  const innerY = rect.y + inset + padding;
+  const innerW = Math.max(0, rect.w - 2 * (inset + padding));
+  const innerH = Math.max(0, rect.h - 2 * (inset + padding));
+
+  const children = node.children
+    .map((id) => components[id])
+    .filter((c) => c && !c.hidden);
+
+  const totalGapW = gap * (cols - 1);
+  const colW = Math.max(1, Math.floor((innerW - totalGapW) / cols));
+  // Compute row heights
+  const rowCount = Math.ceil(children.length / cols);
+  const totalGapH = gap * (rowCount - 1);
+  const rowH = rowCount > 0 ? Math.max(1, Math.floor((innerH - totalGapH) / rowCount)) : innerH;
+
+  children.forEach((child, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const cx = innerX + col * (colW + gap);
+    const cy = innerY + row * (rowH + gap);
+    layoutNode(child, components, { x: cx, y: cy, w: colW, h: rowH }, rects);
+  });
+}
+
 // ────────────────────────────────────────────────────────────────────────
 // Paint
 // ────────────────────────────────────────────────────────────────────────
@@ -290,8 +483,17 @@ function paintNode(
 
   switch (node.type) {
     case 'container':
-    case 'modal': {
-      drawBox(grid, rect, p.border ?? 'none', p.fg, p.bg, p.title);
+    case 'modal':
+    case 'viewport': {
+      drawBox(grid, rect, p.border ?? 'none', p.fg, p.bg, p.title, p.titleAlign, p.borderColor, p.titleColor);
+      node.children.forEach((cid) => {
+        const child = components[cid];
+        if (child) paintNode(child, components, rects, grid);
+      });
+      break;
+    }
+    case 'grid': {
+      drawBox(grid, rect, p.border ?? 'none', p.fg, p.bg, p.title, p.titleAlign, p.borderColor, p.titleColor);
       node.children.forEach((cid) => {
         const child = components[cid];
         if (child) paintNode(child, components, rects, grid);
@@ -299,11 +501,21 @@ function paintNode(
       break;
     }
     case 'text': {
-      writeText(grid, rect.x, rect.y, p.text ?? '', rect.w, p.fg, p.bg, p.bold);
+      if (p.richSpans?.length) {
+        let cx = rect.x;
+        for (const span of p.richSpans) {
+          const avail = Math.max(0, rect.x + rect.w - cx);
+          if (avail <= 0) break;
+          writeText(grid, cx, rect.y, span.text, avail, span.fg, span.bg, span.bold);
+          cx += span.text.length;
+        }
+      } else {
+        writeText(grid, rect.x, rect.y, p.text ?? '', rect.w, p.fg, p.bg, p.bold);
+      }
       break;
     }
     case 'button': {
-      drawBox(grid, rect, p.border ?? 'rounded', p.fg, p.bg);
+      drawBox(grid, rect, p.border ?? 'rounded', p.fg, p.bg, undefined, undefined, p.borderColor);
       const label = p.text ?? 'Button';
       const inner = rect.w - 2;
       const tx = rect.x + 1 + Math.max(0, Math.floor((inner - label.length) / 2));
@@ -312,14 +524,14 @@ function paintNode(
       break;
     }
     case 'input': {
-      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg);
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, undefined, undefined, p.borderColor);
       const text = String(p.value ?? '') || p.placeholder || '';
       const dim = !p.value && p.placeholder ? 'brightBlack' : p.fg;
       writeText(grid, rect.x + 1, rect.y + Math.floor(rect.h / 2), text, rect.w - 2, dim, p.bg);
       break;
     }
     case 'textarea': {
-      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg);
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, undefined, undefined, p.borderColor);
       const lines = (String(p.value ?? '') || p.placeholder || '').split('\n');
       const dim = !p.value && p.placeholder ? 'brightBlack' : p.fg;
       const inset = p.border && p.border !== 'none' ? 1 : 0;
@@ -334,7 +546,7 @@ function paintNode(
       break;
     }
     case 'select': {
-      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg);
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, undefined, undefined, p.borderColor);
       const items = p.items ?? [];
       const idx = p.selectedIndex ?? 0;
       const cur = items[idx] ?? '';
@@ -343,7 +555,7 @@ function paintNode(
       break;
     }
     case 'list': {
-      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title);
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title, p.titleAlign, p.borderColor, p.titleColor);
       const items = p.items ?? [];
       const idx = p.selectedIndex ?? -1;
       const inset = p.border && p.border !== 'none' ? 1 : 0;
@@ -376,8 +588,24 @@ function paintNode(
       break;
     }
     case 'statusbar': {
-      const text = (p.text ?? '').padEnd(rect.w, ' ').slice(0, rect.w);
-      writeText(grid, rect.x, rect.y, text, rect.w, p.fg ?? 'black', p.bg ?? 'cyan');
+      if (p.richSpans?.length) {
+        // Rich-text statusbar: render each span
+        let cx = rect.x;
+        for (const span of p.richSpans) {
+          const avail = Math.max(0, rect.x + rect.w - cx);
+          if (avail <= 0) break;
+          writeText(grid, cx, rect.y, span.text, avail, span.fg, span.bg, span.bold);
+          cx += span.text.length;
+        }
+        // Fill remainder with default statusbar colors
+        if (cx < rect.x + rect.w) {
+          const pad = ' '.repeat(rect.x + rect.w - cx);
+          writeText(grid, cx, rect.y, pad, pad.length, p.fg ?? 'black', p.bg ?? 'cyan');
+        }
+      } else {
+        const text = (p.text ?? '').padEnd(rect.w, ' ').slice(0, rect.w);
+        writeText(grid, rect.x, rect.y, text, rect.w, p.fg ?? 'black', p.bg ?? 'cyan');
+      }
       break;
     }
     case 'progressbar': {
@@ -393,7 +621,7 @@ function paintNode(
       break;
     }
     case 'table': {
-      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title);
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title, p.titleAlign, p.borderColor, p.titleColor);
       const cols = p.columns ?? [];
       const rows = p.rows ?? [];
       if (cols.length === 0) break;
@@ -418,6 +646,82 @@ function paintNode(
           writeText(grid, rect.x + inset + ci * colW, rect.y + inset + 2 + ri, cell ?? '', colW, p.fg, p.bg);
         });
       });
+      break;
+    }
+    case 'spinner': {
+      const style = p.spinnerStyle ?? 'dots';
+      const frames = SPINNER_FRAMES[style] ?? SPINNER_FRAMES['dots']!;
+      const frame = frames[0]!; // static preview shows first frame
+      writeText(grid, rect.x, rect.y, frame, rect.w, p.fg ?? 'cyan', p.bg);
+      if (p.text) {
+        writeText(grid, rect.x + 2, rect.y, ' ' + p.text, rect.w - 2, p.fg, p.bg);
+      }
+      break;
+    }
+    case 'divider': {
+      const orientation = p.orientation ?? 'horizontal';
+      if (orientation === 'vertical') {
+        for (let yy = rect.y; yy < rect.y + rect.h; yy++) {
+          setCell(grid, rect.x, yy, { ch: '│', fg: p.fg ?? p.borderColor, bg: p.bg });
+        }
+      } else {
+        const divFg = p.fg ?? p.borderColor;
+        if (p.text) {
+          const label = ` ${p.text} `;
+          const align: TitleAlign = p.titleAlign ?? 'center';
+          let labelX = rect.x + 1;
+          if (align === 'center') {
+            labelX = rect.x + Math.floor((rect.w - label.length) / 2);
+          } else if (align === 'right') {
+            labelX = rect.x + rect.w - label.length - 1;
+          }
+          // Draw full horizontal line first
+          for (let xx = rect.x; xx < rect.x + rect.w; xx++) {
+            setCell(grid, xx, rect.y, { ch: '─', fg: divFg, bg: p.bg });
+          }
+          // Overwrite label position
+          writeText(grid, labelX, rect.y, label, label.length, p.fg ?? 'default', p.bg);
+        } else {
+          for (let xx = rect.x; xx < rect.x + rect.w; xx++) {
+            setCell(grid, xx, rect.y, { ch: '─', fg: divFg, bg: p.bg });
+          }
+        }
+      }
+      break;
+    }
+    case 'toast': {
+      const variant = p.toastVariant ?? 'info';
+      const style = TOAST_STYLE[variant] ?? TOAST_STYLE['info']!;
+      const toastFg = p.fg ?? style.fg;
+      const toastBg = p.bg ?? style.bg;
+      drawBox(grid, rect, p.border ?? 'rounded', toastFg, toastBg, undefined, undefined, p.borderColor, p.titleColor);
+      const icon = style.icon;
+      const msg = p.text ?? '';
+      const inner = rect.w - 4;
+      const ty = rect.y + Math.floor(rect.h / 2);
+      writeText(grid, rect.x + 1, ty, `${icon} ${msg}`, inner, toastFg, toastBg, p.bold);
+      break;
+    }
+    case 'timer': {
+      const value = p.timerValue ?? '00:00';
+      drawBox(grid, rect, p.border ?? 'none', p.fg, p.bg, p.title, p.titleAlign, p.borderColor, p.titleColor);
+      const inset = p.border && p.border !== 'none' ? 1 : 0;
+      const ty = rect.y + inset + Math.floor((rect.h - 2 * inset) / 2);
+      const tx = rect.x + inset + Math.floor((rect.w - 2 * inset - value.length) / 2);
+      writeText(grid, tx, ty, value, rect.w - 2 * inset, p.fg ?? 'brightCyan', p.bg, p.bold);
+      break;
+    }
+    case 'filepicker': {
+      drawBox(grid, rect, p.border ?? 'single', p.fg, p.bg, p.title ?? ' Files ', p.titleAlign, p.borderColor, p.titleColor);
+      const inset = p.border && p.border !== 'none' ? 1 : 0;
+      const files = p.items ?? ['📁 Documents', '📁 Downloads', '📄 file.txt', '📄 notes.md'];
+      files.slice(0, Math.max(0, rect.h - 2 * inset)).forEach((f, i) => {
+        writeText(grid, rect.x + inset + 1, rect.y + inset + i, f, rect.w - 2 * inset - 2, p.fg, p.bg);
+      });
+      break;
+    }
+    case 'asciitext': {
+      renderAsciiText(grid, rect, p.text ?? 'TEXT', p.fg, p.bg);
       break;
     }
   }

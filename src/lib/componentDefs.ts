@@ -12,6 +12,7 @@ export interface ComponentDef {
 }
 
 export const COMPONENT_DEFS: ComponentDef[] = [
+  // ── Layout ───────────────────────────────────────────────────────────────
   {
     type: 'container',
     label: 'Container',
@@ -29,6 +30,39 @@ export const COMPONENT_DEFS: ComponentDef[] = [
       title: '',
     },
   },
+  {
+    type: 'grid',
+    label: 'Grid',
+    group: 'layout',
+    icon: '⊞',
+    description: '2D grid container. Place fill-width children here to arrange them in columns.',
+    acceptsChildren: true,
+    defaults: {
+      gridCols: 2,
+      gridGap: 1,
+      width: 'fill',
+      height: 'fill',
+      padding: 0,
+      border: 'none',
+    },
+  },
+  {
+    type: 'viewport',
+    label: 'Viewport',
+    group: 'layout',
+    icon: '⬜',
+    description: 'Scrollable content area.',
+    acceptsChildren: true,
+    defaults: {
+      direction: 'column',
+      width: 'fill',
+      height: 'fill',
+      padding: 1,
+      border: 'single',
+      title: ' Viewport ',
+    },
+  },
+  // ── Basic ─────────────────────────────────────────────────────────────────
   {
     type: 'text',
     label: 'Text',
@@ -127,10 +161,25 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     },
   },
   {
+    type: 'divider',
+    label: 'Divider',
+    group: 'basic',
+    icon: '─',
+    description: 'Horizontal or vertical separator line, optionally with a label.',
+    acceptsChildren: false,
+    defaults: {
+      width: 'fill',
+      height: 1,
+      orientation: 'horizontal',
+      titleAlign: 'center',
+    },
+  },
+  // ── Advanced ───────────────────────────────────────────────────────────────
+  {
     type: 'table',
     label: 'Table',
     group: 'advanced',
-    icon: '⊞',
+    icon: '⊟',
     description: 'Tabular data.',
     acceptsChildren: false,
     defaults: {
@@ -164,7 +213,7 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     label: 'Status bar',
     group: 'advanced',
     icon: '▭',
-    description: 'Single-line status footer.',
+    description: 'Single-line status footer. Supports richSpans for per-word coloring.',
     acceptsChildren: false,
     defaults: {
       text: ' READY  ·  q: quit  ·  ?: help ',
@@ -182,6 +231,78 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     description: 'Progress bar (0..1).',
     acceptsChildren: false,
     defaults: { progress: 0.4, width: 'fill', height: 1, fg: 'green' },
+  },
+  {
+    type: 'spinner',
+    label: 'Spinner',
+    group: 'advanced',
+    icon: '⠋',
+    description: 'Animated loading indicator (static in preview).',
+    acceptsChildren: false,
+    defaults: {
+      spinnerStyle: 'dots',
+      width: 'auto',
+      height: 1,
+      fg: 'cyan',
+    },
+  },
+  {
+    type: 'timer',
+    label: 'Timer',
+    group: 'advanced',
+    icon: '⏱',
+    description: 'Countdown or elapsed-time display.',
+    acceptsChildren: false,
+    defaults: {
+      timerValue: '00:00',
+      width: 'auto',
+      height: 1,
+      fg: 'brightCyan',
+    },
+  },
+  {
+    type: 'toast',
+    label: 'Toast',
+    group: 'advanced',
+    icon: '💬',
+    description: 'Floating notification. Set toastVariant for coloring.',
+    acceptsChildren: false,
+    defaults: {
+      text: 'Operation complete',
+      toastVariant: 'success',
+      width: 26,
+      height: 3,
+      border: 'rounded',
+    },
+  },
+  {
+    type: 'filepicker',
+    label: 'File Picker',
+    group: 'advanced',
+    icon: '📂',
+    description: 'File browser / selection widget.',
+    acceptsChildren: false,
+    defaults: {
+      width: 30,
+      height: 8,
+      border: 'single',
+      title: ' Files ',
+      items: ['📁 Documents', '📁 Downloads', '📄 file.txt', '📄 notes.md'],
+    },
+  },
+  {
+    type: 'asciitext',
+    label: 'ASCII Text',
+    group: 'advanced',
+    icon: 'A',
+    description: 'Large ASCII-art banner text (figlet-style).',
+    acceptsChildren: false,
+    defaults: {
+      text: 'HELLO',
+      width: 'fill',
+      height: 5,
+      fg: 'brightCyan',
+    },
   },
   {
     type: 'modal',
