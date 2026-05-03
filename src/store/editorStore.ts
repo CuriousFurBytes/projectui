@@ -125,7 +125,7 @@ function migrateProject(p: ProjectState): ProjectState {
     project = { ...project, activeLayerIndex: 0 };
   }
   if (!project.timelineSteps) {
-    project = { ...project, timelineSteps: makeTimelineStepsForLayers(project.layers) };
+    project = { ...project, timelineSteps: makeTimelineStepsForLayers(project.layers ?? []) };
   }
   if (!project.timelineTransitions) {
     project = { ...project, timelineTransitions: [] };
