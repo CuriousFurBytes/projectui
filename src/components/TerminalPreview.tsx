@@ -201,8 +201,8 @@ export function TerminalPreview() {
         <Overlay
           rect={selectedId ? result.rects[selectedId] : null}
           cell={{ w: cell.w, h: cell.h }}
-          color={theme.accent}
-          dashed={false}
+          color="#7aa2f7"
+          dashed
           onClick={(e) => e.stopPropagation()}
         />
       </div>

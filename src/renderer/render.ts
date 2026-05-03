@@ -53,7 +53,13 @@ function setCell(grid: Cell[][], x: number, y: number, cell: Cell) {
   if (y < 0 || y >= grid.length) return;
   const row = grid[y];
   if (x < 0 || x >= row.length) return;
-  row[x] = { ...row[x], ...cell };
+  const existing = row[x];
+  row[x] = {
+    ch: cell.ch,
+    fg: cell.fg ?? existing.fg,
+    bg: cell.bg ?? existing.bg,
+    bold: cell.bold ?? existing.bold,
+  };
 }
 
 function writeText(

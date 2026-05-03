@@ -50,7 +50,7 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     type: 'viewport',
     label: 'Viewport',
     group: 'layout',
-    icon: '⬜',
+    icon: '▣',
     description: 'Scrollable content area.',
     acceptsChildren: true,
     defaults: {
