@@ -264,7 +264,7 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     type: 'toast',
     label: 'Toast',
     group: 'advanced',
-    icon: '💬',
+    icon: '◈',
     description: 'Floating notification. Set toastVariant for coloring.',
     acceptsChildren: false,
     defaults: {
@@ -279,7 +279,7 @@ export const COMPONENT_DEFS: ComponentDef[] = [
     type: 'filepicker',
     label: 'File Picker',
     group: 'advanced',
-    icon: '📂',
+    icon: '⊡',
     description: 'File browser / selection widget.',
     acceptsChildren: false,
     defaults: {
