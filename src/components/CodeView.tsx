@@ -3,13 +3,15 @@ import clsx from 'clsx';
 import { useEditor } from '@/store/editorStore';
 import { exportTextual } from '@/exporters/textualExporter';
 import { exportBubbleTea } from '@/exporters/bubbleTeaExporter';
+import { exportRatatui } from '@/exporters/ratauiExporter';
 import { runPython, isPyodideReady, loadPyodideRuntime } from '@/wasm/pyodideRunner';
 
-type Lang = 'textual' | 'bubbletea' | 'json';
+type Lang = 'textual' | 'bubbletea' | 'ratatui' | 'json';
 
 const TABS: { value: Lang; label: string; ext: string }[] = [
   { value: 'textual', label: 'Python · Textual', ext: 'py' },
   { value: 'bubbletea', label: 'Go · Bubble Tea', ext: 'go' },
+  { value: 'ratatui', label: 'Rust · Ratatui', ext: 'rs' },
   { value: 'json', label: 'Project · JSON', ext: 'json' },
 ];
 
@@ -25,6 +27,7 @@ export function CodeView() {
   const code = useMemo(() => {
     if (lang === 'textual') return exportTextual(project);
     if (lang === 'bubbletea') return exportBubbleTea(project);
+    if (lang === 'ratatui') return exportRatatui(project);
     return exportJson();
   }, [lang, project, exportJson]);
 

@@ -198,6 +198,17 @@ interface EditorState {
   saveVariant: (nodeId: string, name: string) => void;
   deleteVariant: (variantId: string) => void;
   instantiateVariant: (variantId: string, parentId: string, index?: number) => string;
+  // Layer duplicate
+  duplicateLayer: (index: number) => void;
+  // Copy / paste
+  clipboardId: string | null;
+  copyNode: (id: string) => void;
+  pasteNode: (parentId: string) => string;
+  // Multi-select
+  selectedIds: Set<string>;
+  toggleSelectId: (id: string) => void;
+  clearMultiSelect: () => void;
+  removeSelected: () => void;
 }
 
 const cloneProject = (p: ProjectState): ProjectState => JSON.parse(JSON.stringify(p)) as ProjectState;
@@ -216,6 +227,8 @@ export const useEditor = create<EditorState>()(
       hoverId: null,
       past: [],
       future: [],
+      clipboardId: null,
+      selectedIds: new Set<string>(),
 
       select: (id) => set({ selectedId: id }),
       setHover: (id) => set({ hoverId: id }),
@@ -624,6 +637,110 @@ export const useEditor = create<EditorState>()(
         saveProject(project);
         set({ ...next, project, selectedId: newRootId });
         return newRootId;
+      },
+      // ── Duplicate layer ─────────────────────────────────────────────────
+      duplicateLayer: (index) => {
+        const state = get();
+        const savedLayers = syncLayersArray(state.project);
+        const source = savedLayers[index];
+        if (!source) return;
+        const { nodes: clonedNodes, rootId: newRootId } = cloneSubtreeWithNewIds(
+          source.components,
+          source.rootId,
+          null,
+        );
+        const newLayer: Layer = {
+          id: uid('layer'),
+          name: `${source.name} (copy)`,
+          rootId: newRootId,
+          components: clonedNodes,
+        };
+        const newLayers = [...savedLayers, newLayer];
+        const newIdx = newLayers.length - 1;
+        const next = pushHistory(state);
+        const newStep: TimelineStep = { id: uid('step'), layerId: newLayer.id, label: newLayer.name };
+        const project: ProjectState = {
+          ...state.project,
+          rootId: newLayer.rootId,
+          components: newLayer.components,
+          layers: newLayers,
+          activeLayerIndex: newIdx,
+          timelineSteps: [...(state.project.timelineSteps ?? []), newStep],
+        };
+        saveProject(project);
+        set({ ...next, project, selectedId: null });
+      },
+
+      // ── Copy / paste ────────────────────────────────────────────────────
+      copyNode: (id) => {
+        const node = get().project.components[id];
+        if (!node) return;
+        set({ clipboardId: id });
+      },
+
+      pasteNode: (parentId) => {
+        const state = get();
+        const clipId = state.clipboardId;
+        if (!clipId) return '';
+        const sourceNode = state.project.components[clipId];
+        const parent = state.project.components[parentId];
+        if (!sourceNode || !parent) return '';
+        try {
+          if (!getDef(parent.type).acceptsChildren) return '';
+        } catch {
+          return '';
+        }
+        const { nodes: cloned, rootId: newRootId } = cloneSubtreeWithNewIds(
+          state.project.components,
+          clipId,
+          parentId,
+        );
+        const next = pushHistory(state);
+        const components = { ...state.project.components, ...cloned };
+        const newChildren = [...parent.children, newRootId];
+        components[parentId] = { ...parent, children: newChildren };
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: newRootId });
+        return newRootId;
+      },
+
+      // ── Multi-select ────────────────────────────────────────────────────
+      toggleSelectId: (id) => {
+        const current = get().selectedIds;
+        const next = new Set(current);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        set({ selectedIds: next });
+      },
+
+      clearMultiSelect: () => {
+        set({ selectedIds: new Set() });
+      },
+
+      removeSelected: () => {
+        const state = get();
+        const ids = Array.from(state.selectedIds);
+        if (ids.length === 0) return;
+        const next = pushHistory(state);
+        const components = { ...state.project.components };
+        const rootId = state.project.rootId;
+        ids.forEach((id) => {
+          if (id === rootId) return;
+          const collect = (rid: string) => {
+            delete components[rid];
+            (state.project.components[rid]?.children ?? []).forEach(collect);
+          };
+          const node = components[id];
+          if (node?.parentId) {
+            const p = components[node.parentId];
+            if (p) components[node.parentId] = { ...p, children: p.children.filter((c) => c !== id) };
+          }
+          collect(id);
+        });
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: null, selectedIds: new Set() });
       },
     }),
     { name: 'tui-builder' },

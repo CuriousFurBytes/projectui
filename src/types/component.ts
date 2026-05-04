@@ -24,7 +24,7 @@ export type ComponentType =
   | 'filepicker'
   | 'asciitext';
 
-export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick';
+export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick' | 'ascii';
 export type Direction = 'row' | 'column';
 export type Align = 'start' | 'center' | 'end' | 'stretch';
 export type TitleAlign = 'left' | 'center' | 'right';

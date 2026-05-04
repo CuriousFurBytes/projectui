@@ -14,4 +14,5 @@ export const BOX: Record<Exclude<BorderStyle, 'none'>, BoxChars> = {
   double: { tl: '╔', tr: '╗', bl: '╚', br: '╝', h: '═', v: '║' },
   rounded: { tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' },
   thick: { tl: '┏', tr: '┓', bl: '┗', br: '┛', h: '━', v: '┃' },
+  ascii: { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' },
 };

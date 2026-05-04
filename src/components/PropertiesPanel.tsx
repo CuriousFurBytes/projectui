@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import type {
@@ -60,7 +60,7 @@ const ANSI_COLORS: AnsiColor[] = [
   'brightWhite',
 ];
 
-const BORDER_STYLES: BorderStyle[] = ['none', 'single', 'double', 'rounded', 'thick'];
+const BORDER_STYLES: BorderStyle[] = ['none', 'single', 'double', 'rounded', 'thick', 'ascii'];
 const TITLE_ALIGNS: TitleAlign[] = ['left', 'center', 'right'];
 
 function sizeToString(s: Size | undefined): string {
@@ -92,6 +92,27 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+// Visual ANSI color swatches (A-G)
+const ANSI_HEX: Record<AnsiColor, string> = {
+  default: 'transparent',
+  black: '#000000',
+  red: '#cc0000',
+  green: '#00aa00',
+  yellow: '#aaaa00',
+  blue: '#0000cc',
+  magenta: '#aa00aa',
+  cyan: '#00aaaa',
+  white: '#aaaaaa',
+  brightBlack: '#555555',
+  brightRed: '#ff5555',
+  brightGreen: '#55ff55',
+  brightYellow: '#ffff55',
+  brightBlue: '#5555ff',
+  brightMagenta: '#ff55ff',
+  brightCyan: '#55ffff',
+  brightWhite: '#ffffff',
+};
+
 function ColorSelect({
   label,
   value,
@@ -101,15 +122,50 @@ function ColorSelect({
   value?: AnsiColor;
   onChange: (v: AnsiColor) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = value ?? 'default';
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   return (
     <Field label={label}>
-      <select className="input" value={value ?? 'default'} onChange={(e) => onChange(e.target.value as AnsiColor)}>
-        {ANSI_COLORS.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
+      <div ref={ref} className="relative">
+        <button
+          type="button"
+          className="input flex items-center gap-2 w-full text-xs"
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span
+            className="inline-block w-4 h-4 rounded-sm border border-ink-500 shrink-0"
+            style={{ background: ANSI_HEX[current] }}
+          />
+          <span className="truncate">{current}</span>
+        </button>
+        {open && (
+          <div className="absolute z-30 left-0 top-full mt-1 bg-ink-800 border border-ink-500 rounded shadow-lg p-2 w-44">
+            <div className="grid grid-cols-4 gap-1">
+              {ANSI_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  title={c}
+                  className={`w-8 h-8 rounded border-2 transition-transform hover:scale-110 ${current === c ? 'border-accent' : 'border-transparent'}`}
+                  style={{ background: c === 'default' ? 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px' : ANSI_HEX[c] }}
+                  onClick={() => { onChange(c); setOpen(false); }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </Field>
   );
 }
