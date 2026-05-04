@@ -15,3 +15,4 @@ coverage
 e2e/test-results/
 /test-results/
 /playwright-report/
+.claude/
