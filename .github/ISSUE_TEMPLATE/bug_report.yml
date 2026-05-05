@@ -1,0 +1,8 @@
+name: Bug report
+description: Report a defect
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+    validations:
+      required: true
