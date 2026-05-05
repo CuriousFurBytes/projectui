@@ -85,6 +85,36 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
         const lines = [cols.join(' | '), cols.map(() => '---').join(' | '), ...rows.map((r) => r.join(' | '))];
         return goStr(lines.join('\n'));
       }
+      case 'asciitext':
+        return goStr(p.text ?? 'TEXT');
+      case 'spinner':
+        return goStr('⠋ Loading...');
+      case 'divider':
+        return goStr(p.text ? `── ${p.text} ──` : '────────────────────');
+      case 'toast':
+        return goStr(`[${p.toastVariant ?? 'info'}] ${p.text ?? ''}`);
+      case 'timer':
+        return goStr(p.timerValue ?? '00:00');
+      case 'filepicker': {
+        const files = (p.items ?? ['Documents/', 'Downloads/', 'file.txt']).join('\n');
+        return goStr(files);
+      }
+      case 'treeview': {
+        const items = (p.treeItems ?? []).map((ti) => `▶ ${ti.label ?? ''}`).join('\n');
+        return goStr(items || '▶ item');
+      }
+      case 'metriccard':
+        return goStr(`${p.metricLabel ?? 'Metric'}\n${p.metricValue ?? '—'}${p.metricDelta ? `  ${p.metricDelta}` : ''}`);
+      case 'markdowntext':
+        return goStr(p.markdownContent ?? '');
+      case 'grid':
+      case 'viewport': {
+        const childStrs = node.children
+          .map((cid) => components[cid])
+          .filter(Boolean)
+          .map((c) => renderWidget(c, components, { w, h }));
+        return childStrs.length === 0 ? `""` : `lipgloss.JoinVertical(lipgloss.Left, ${childStrs.join(', ')})`;
+      }
       default:
         return goStr(`<${node.type}>`);
     }
@@ -108,6 +138,9 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
         ? 'lipgloss.ASCIIBorder()'
         : 'lipgloss.NormalBorder()';
     styleParts.push(`Border(${b})`);
+    if (p.title) styleParts.push(`Title(${goStr(p.title)})`);
+    if (p.borderColor && p.borderColor !== 'default')
+      styleParts.push(`BorderForeground(lipgloss.ANSIColor(${ANSI_INDEX[p.borderColor]}))`);
   }
   if (typeof p.width === 'number') styleParts.push(`Width(${p.width})`);
   if (typeof p.height === 'number') styleParts.push(`Height(${p.height})`);

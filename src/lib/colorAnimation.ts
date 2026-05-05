@@ -1,44 +1,46 @@
 import type { AnsiColor, ColorAnimation, AnimationDirection } from '@/types/component';
 
-const SOLID_COLOR: AnsiColor = 'brightCyan';
-const GRADIENT_TRAIL: AnsiColor[] = ['brightCyan', 'cyan', 'brightBlue', 'blue', 'brightBlack'];
+const DEFAULT_SOLID_COLOR: AnsiColor = 'brightCyan';
+const DEFAULT_GRADIENT_TRAIL: AnsiColor[] = ['brightCyan', 'cyan', 'brightBlue', 'blue', 'brightBlack'];
 const RAINBOW: AnsiColor[] = [
   'brightRed', 'brightYellow', 'brightGreen', 'brightCyan', 'brightBlue', 'brightMagenta',
 ];
 
-function computeSolid(width: number, tick: number, direction: AnimationDirection): AnsiColor[] {
+function computeSolid(width: number, tick: number, direction: AnimationDirection, colors?: AnsiColor[]): AnsiColor[] {
+  const solidColor = colors?.[0] ?? DEFAULT_SOLID_COLOR;
   const result: AnsiColor[] = new Array(width).fill('default') as AnsiColor[];
 
   if (direction === 'ltr') {
-    result[Math.min(Math.floor(tick * width), width - 1)] = SOLID_COLOR;
+    result[Math.min(Math.floor(tick * width), width - 1)] = solidColor;
   } else if (direction === 'rtl') {
-    result[Math.max(width - 1 - Math.floor(tick * width), 0)] = SOLID_COLOR;
+    result[Math.max(width - 1 - Math.floor(tick * width), 0)] = solidColor;
   } else if (direction === 'center-out') {
     const center = Math.floor(width / 2);
     const leftPos = Math.max(0, center - Math.round(tick * center));
     const rightPos = Math.min(width - 1, center + Math.round(tick * (width - 1 - center)));
-    result[leftPos] = SOLID_COLOR;
-    result[rightPos] = SOLID_COLOR;
+    result[leftPos] = solidColor;
+    result[rightPos] = solidColor;
   } else {
     // sides-in
     const center = Math.floor(width / 2);
     const leftPos = Math.min(center, Math.round(tick * center));
     const rightPos = Math.max(center, width - 1 - Math.round(tick * (width - 1 - center)));
-    result[leftPos] = SOLID_COLOR;
-    result[rightPos] = SOLID_COLOR;
+    result[leftPos] = solidColor;
+    result[rightPos] = solidColor;
   }
 
   return result;
 }
 
-function computeGradient(width: number, tick: number, direction: AnimationDirection): AnsiColor[] {
+function computeGradient(width: number, tick: number, direction: AnimationDirection, colors?: AnsiColor[]): AnsiColor[] {
+  const trail = (colors && colors.length >= 2) ? colors : DEFAULT_GRADIENT_TRAIL;
   const result: AnsiColor[] = new Array(width).fill('default') as AnsiColor[];
-  const n = GRADIENT_TRAIL.length;
+  const n = trail.length;
 
   const paint = (head: number, trailDir: 1 | -1) => {
     for (let i = 0; i < n; i++) {
       const pos = head - i * trailDir;
-      if (pos >= 0 && pos < width) result[pos] = GRADIENT_TRAIL[i];
+      if (pos >= 0 && pos < width) result[pos] = trail[i]!;
     }
   };
 
@@ -49,13 +51,13 @@ function computeGradient(width: number, tick: number, direction: AnimationDirect
   } else if (direction === 'center-out') {
     const center = Math.floor(width / 2);
     const offset = Math.floor(tick * (Math.floor(width / 2) + 1));
-    paint(center - offset, -1); // left head, trail goes right
-    paint(center + offset, 1);  // right head, trail goes left
+    paint(center - offset, -1);
+    paint(center + offset, 1);
   } else {
     // sides-in
     const offset = Math.floor(tick * (Math.floor(width / 2) + 1));
-    paint(offset, 1);                  // left head, trail goes left
-    paint(width - 1 - offset, -1);    // right head, trail goes right
+    paint(offset, 1);
+    paint(width - 1 - offset, -1);
   }
 
   return result;
@@ -63,24 +65,26 @@ function computeGradient(width: number, tick: number, direction: AnimationDirect
 
 function computeRainbow(width: number, tick: number, direction: AnimationDirection): AnsiColor[] {
   const n = RAINBOW.length;
-  const shift = Math.floor(tick * n);
-
+  // Map each column to a fraction in [0,1) across the full width so exactly
+  // one rainbow cycle spans the text. tick shifts the entire rainbow over time.
   return Array.from({ length: width }, (_, c) => {
-    let idx: number;
+    let pos: number;
     if (direction === 'ltr') {
-      idx = (c + shift) % n;
+      pos = c / Math.max(width, 1) + tick;
     } else if (direction === 'rtl') {
-      idx = (width - 1 - c + shift) % n;
+      pos = (width - 1 - c) / Math.max(width, 1) + tick;
     } else if (direction === 'center-out') {
+      const half = Math.max(width / 2, 1);
       const center = Math.floor(width / 2);
-      idx = (Math.abs(c - center) + shift) % n;
+      pos = Math.abs(c - center) / half + tick;
     } else {
-      // sides-in: invert the center-out distance
+      // sides-in: rainbow peaks at edges, converges to center
+      const half = Math.max(width / 2, 1);
       const center = Math.floor(width / 2);
-      const dist = Math.abs(c - center);
-      idx = ((n - (dist % n)) + shift) % n;
+      pos = 1 - Math.abs(c - center) / half + tick;
     }
-    return RAINBOW[idx];
+    const idx = Math.floor(((pos % 1) + 1) % 1 * n);
+    return RAINBOW[idx] ?? RAINBOW[0]!;
   });
 }
 
@@ -93,7 +97,7 @@ export function getAnimatedColors(
 
   const clamped = Math.max(0, Math.min(0.9999, tick));
 
-  if (animation.type === 'solid') return computeSolid(width, clamped, animation.direction);
-  if (animation.type === 'gradient') return computeGradient(width, clamped, animation.direction);
+  if (animation.type === 'solid') return computeSolid(width, clamped, animation.direction, animation.colors);
+  if (animation.type === 'gradient') return computeGradient(width, clamped, animation.direction, animation.colors);
   return computeRainbow(width, clamped, animation.direction);
 }

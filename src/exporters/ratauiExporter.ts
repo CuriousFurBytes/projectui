@@ -73,6 +73,41 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
       return `${pad}Paragraph::new(${rustStr(p.text ?? '')})\n${pad}    .style(Style::default().bg(Color::Cyan).fg(Color::Black))`;
     case 'divider':
       return `${pad}Block::new().borders(Borders::TOP)`;
+    case 'asciitext':
+      return `${pad}Paragraph::new(${rustStr(p.text ?? 'TEXT')})`;
+    case 'spinner':
+      return `${pad}Paragraph::new("⠋ Loading...")`;
+    case 'toast':
+      return `${pad}Paragraph::new(${rustStr(`[${p.toastVariant ?? 'info'}] ${p.text ?? ''}`)})\n${pad}    .block(Block::bordered())`;
+    case 'timer':
+      return `${pad}Paragraph::new(${rustStr(p.timerValue ?? '00:00')})`;
+    case 'filepicker': {
+      const items = (p.items ?? ['Documents/', 'Downloads/', 'file.txt'])
+        .map((f) => `ListItem::new(${rustStr(f)})`).join(', ');
+      return `${pad}List::new(vec![${items}])\n${pad}    .block(Block::bordered().title(${rustStr(p.title ?? ' Files ')}))`;
+    }
+    case 'treeview': {
+      const items = (p.treeItems ?? []).map((ti) => `ListItem::new(${rustStr(`▶ ${ti.label ?? ''}`)})`).join(', ');
+      return `${pad}List::new(vec![${items || `ListItem::new("▶ item")`}])\n${pad}    .block(Block::bordered())`;
+    }
+    case 'metriccard':
+      return `${pad}Paragraph::new(${rustStr(`${p.metricLabel ?? 'Metric'}: ${p.metricValue ?? '—'}${p.metricDelta ? ` (${p.metricDelta})` : ''}`)})\n${pad}    .block(Block::bordered())`;
+    case 'markdowntext':
+      return `${pad}Paragraph::new(${rustStr(p.markdownContent ?? '')})\n${pad}    .wrap(Wrap { trim: false })`;
+    case 'modal':
+    case 'grid':
+    case 'viewport': {
+      const children = node.children
+        .map((cid) => components[cid])
+        .filter(Boolean)
+        .map((c) => renderWidget(c, components, depth + 1));
+      if (children.length === 0) return `${pad}Paragraph::new("")`;
+      return `${pad}Vertical::new([\n${children.join(',\n')},\n${pad}])`;
+    }
+    case 'select': {
+      const items = (p.items ?? []).map((it) => rustStr(it)).join(', ');
+      return `${pad}List::new(vec![${items}])\n${pad}    .highlight_style(Style::default().reversed())`;
+    }
     default:
       return `${pad}Paragraph::new(${rustStr(`<${node.type}>`)})`;
   }

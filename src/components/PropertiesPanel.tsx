@@ -166,6 +166,16 @@ function AnimationSection({
   const set = <K extends keyof ColorAnimation>(key: K, value: ColorAnimation[K]) =>
     onChange({ ...animation, [key]: value });
 
+  const colors = animation.colors ?? [];
+  const solidColor: AnsiColor = colors[0] ?? 'brightCyan';
+  const gradColors: AnsiColor[] = colors.length >= 2 ? colors : ['brightCyan', 'blue'];
+
+  const setGradColor = (i: number, c: AnsiColor) => {
+    const next = [...gradColors];
+    next[i] = c;
+    set('colors', next);
+  };
+
   return (
     <Section title="Animation">
       <div className="col-span-2 flex items-center gap-2">
@@ -201,6 +211,49 @@ function AnimationSection({
               ))}
             </select>
           </Field>
+
+          {animation.type === 'solid' && (
+            <ColorSelect
+              label="Color"
+              value={solidColor}
+              onChange={(c) => set('colors', [c])}
+            />
+          )}
+
+          {animation.type === 'gradient' && (
+            <div className="col-span-2 flex flex-col gap-1">
+              <span className="label">Trail colors</span>
+              {gradColors.map((c, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className="text-xs text-ink-400 w-4 shrink-0">{i + 1}</span>
+                  <select
+                    className="input flex-1 text-xs"
+                    value={c}
+                    onChange={(e) => setGradColor(i, e.target.value as AnsiColor)}
+                  >
+                    {ANSI_COLORS.filter(ac => ac !== 'default').map((ac) => (
+                      <option key={ac} value={ac}>{ac}</option>
+                    ))}
+                  </select>
+                  {gradColors.length > 2 && (
+                    <button
+                      type="button"
+                      className="text-ink-400 hover:text-ink-100 text-xs px-1"
+                      onClick={() => set('colors', gradColors.filter((_, j) => j !== i))}
+                    >×</button>
+                  )}
+                </div>
+              ))}
+              {gradColors.length < 6 && (
+                <button
+                  type="button"
+                  className="text-xs text-accent hover:text-accent/80 text-left mt-0.5"
+                  onClick={() => set('colors', [...gradColors, 'brightBlack'])}
+                >+ Add color</button>
+              )}
+            </div>
+          )}
+
           <Field label="Duration (ms)">
             <input
               type="number"
@@ -850,6 +903,21 @@ function ContentSection({ node }: { node: ComponentNode }) {
                 placeholder="HELLO"
                 onChange={(e) => setProp('text', e.target.value)}
               />
+            </Field>
+          </div>
+          <div className="col-span-2">
+            <Field label="Font Style">
+              <select
+                className="input"
+                value={p.asciiFont ?? 'block'}
+                onChange={(e) => setProp('asciiFont', e.target.value)}
+              >
+                <option value="block">Block (filled)</option>
+                <option value="slim">Slim (line-art)</option>
+                <option value="shadow">Shadow (shaded)</option>
+                <option value="outline">Outline (box-drawing)</option>
+                <option value="dotmatrix">Dot Matrix (LED)</option>
+              </select>
             </Field>
           </div>
         </Section>

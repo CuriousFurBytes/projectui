@@ -96,6 +96,30 @@ function emitWidget(node: ComponentNode, components: Record<string, ComponentNod
       return `${pad}Static(${pyStr(p.text ?? '')}, id=${pyStr(id(node))}, classes="statusbar")`;
     case 'table':
       return `${pad}DataTable(id=${pyStr(id(node))})`;
+    case 'asciitext':
+      return `${pad}Static(${pyStr(p.text ?? 'TEXT')}, id=${pyStr(id(node))})  # ASCII art: install pyfiglet for styled output`;
+    case 'spinner':
+      return `${pad}LoadingIndicator(id=${pyStr(id(node))})`;
+    case 'divider':
+      return p.orientation === 'vertical'
+        ? `${pad}Rule(orientation="vertical", id=${pyStr(id(node))})`
+        : `${pad}Rule(${p.text ? `line_character="-", id=${pyStr(id(node))}` : `id=${pyStr(id(node))}`})`;
+    case 'toast':
+      return `${pad}Static(${pyStr(`[${p.toastVariant ?? 'info'}] ${p.text ?? ''}`)}, id=${pyStr(id(node))}, classes="toast ${p.toastVariant ?? 'info'}")`;
+    case 'timer':
+      return `${pad}Digits(${pyStr(p.timerValue ?? '00:00')}, id=${pyStr(id(node))})`;
+    case 'filepicker':
+      return `${pad}DirectoryTree(${pyStr('.')}, id=${pyStr(id(node))})`;
+    case 'treeview':
+      return `${pad}Tree(${pyStr('root')}, id=${pyStr(id(node))})`;
+    case 'metriccard':
+      return `${pad}Static(${pyStr(`${p.metricLabel ?? 'Metric'}: ${p.metricValue ?? '—'}${p.metricDelta ? ` (${p.metricDelta})` : ''}`)}, id=${pyStr(id(node))})`;
+    case 'markdowntext':
+      return `${pad}Markdown(${pyStr(p.markdownContent ?? '')}, id=${pyStr(id(node))})`;
+    case 'grid':
+      return `${pad}Grid(id=${pyStr(id(node))})`;
+    case 'viewport':
+      return `${pad}ScrollableContainer(id=${pyStr(id(node))})`;
     default:
       return `${pad}Static(${pyStr(`<${node.type}>`)}, id=${pyStr(id(node))})`;
   }
@@ -119,7 +143,6 @@ function tableInit(node: ComponentNode, components: Record<string, ComponentNode
       const cols = (n.props.columns ?? []).map(pyStr).join(', ');
       const rows = (n.props.rows ?? []).map((r) => {
         const cells = r.map(pyStr).join(', ');
-        // Single-element tuples need a trailing comma to avoid being parsed as a grouped expression.
         return r.length === 1 ? `(${cells},)` : `(${cells})`;
       }).join(', ');
       out.push(
@@ -132,6 +155,12 @@ function tableInit(node: ComponentNode, components: Record<string, ComponentNode
     if (n.type === 'progressbar') {
       out.push(
         `        self.query_one("#${id(n)}", ProgressBar).update(progress=${(n.props.progress ?? 0) * 100})`,
+      );
+    }
+    // Set border_title for any container/modal with a title
+    if ((n.type === 'container' || n.type === 'modal') && n.props.title) {
+      out.push(
+        `        self.query_one("#${id(n)}").border_title = ${pyStr(n.props.title)}`,
       );
     }
   });
@@ -187,6 +216,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
 from textual.widgets import Static, Button, Input, TextArea, Checkbox, Select
 from textual.widgets import ListView, ListItem, Label, Tabs, Tab, ProgressBar, DataTable
+from textual.widgets import LoadingIndicator, Rule, Digits, DirectoryTree, Tree, Markdown
 
 
 class GeneratedApp(App):

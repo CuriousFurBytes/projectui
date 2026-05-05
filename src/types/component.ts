@@ -33,6 +33,7 @@ export type Align = 'start' | 'center' | 'end' | 'stretch';
 export type TitleAlign = 'left' | 'center' | 'right';
 export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
 export type SpinnerStyle = 'dots' | 'line' | 'braille' | 'arc';
+export type AsciiFont = 'block' | 'slim' | 'shadow' | 'outline' | 'dotmatrix';
 export type AnimationType = 'solid' | 'gradient' | 'rainbow';
 export type AnimationDirection = 'ltr' | 'rtl' | 'center-out' | 'sides-in';
 
@@ -43,6 +44,7 @@ export interface ColorAnimation {
   durationMs: number;
   loop: boolean;
   loopCount?: number;
+  colors?: AnsiColor[]; // custom palette: 1 color for solid, 2-5 for gradient trail
 }
 
 // 16 standard ANSI palette names + 'default'.
@@ -120,6 +122,9 @@ export interface ComponentProps {
 
   // Spinner
   spinnerStyle?: SpinnerStyle;
+
+  // ASCII Text font style
+  asciiFont?: AsciiFont;
 
   // Toast
   toastVariant?: ToastVariant;
