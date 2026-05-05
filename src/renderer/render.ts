@@ -565,16 +565,21 @@ function paintNode(
       const items = p.items ?? [];
       const idx = p.selectedIndex ?? -1;
       const inset = p.border && p.border !== 'none' ? 1 : 0;
+      const icon = (p.listIcon ?? '›') + ' ';
+      const iconLen = icon.length;
+      const noIconPad = ' '.repeat(iconLen);
       items.slice(0, Math.max(0, rect.h - 2 * inset)).forEach((it, i) => {
         const sel = i === idx;
+        const rowFg = sel ? (p.listSelectedFg ?? 'brightWhite') : (p.listUnselectedFg ?? p.fg);
+        const rowBg = sel ? (p.listSelectedBg ?? 'brightBlack') : (p.listUnselectedBg ?? p.bg);
         writeText(
           grid,
           rect.x + inset,
           rect.y + inset + i,
-          (sel ? '› ' : '  ') + it,
+          (sel ? icon : noIconPad) + it,
           Math.max(0, rect.w - 2 * inset),
-          sel ? 'brightWhite' : p.fg,
-          sel ? 'brightBlack' : p.bg,
+          rowFg,
+          rowBg,
           sel,
         );
       });

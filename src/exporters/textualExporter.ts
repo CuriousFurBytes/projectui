@@ -185,10 +185,8 @@ Run:
 """
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
-from textual.widgets import (
-    Static, Button, Input, TextArea, Checkbox, Select,
-    ListView, ListItem, Label, Tabs, Tab, ProgressBar, DataTable,
-)
+from textual.widgets import Static, Button, Input, TextArea, Checkbox, Select
+from textual.widgets import ListView, ListItem, Label, Tabs, Tab, ProgressBar, DataTable
 
 
 class GeneratedApp(App):

@@ -127,6 +127,13 @@ export interface ComponentProps {
   // Divider / separator orientation
   orientation?: 'horizontal' | 'vertical';
 
+  // List customization
+  listSelectedFg?: AnsiColor;
+  listSelectedBg?: AnsiColor;
+  listUnselectedFg?: AnsiColor;
+  listUnselectedBg?: AnsiColor;
+  listIcon?: string;
+
   // Color animation (text, asciitext, progressbar)
   animation?: ColorAnimation;
 

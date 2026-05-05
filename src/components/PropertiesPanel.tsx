@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
+import { getTheme } from '@/lib/themes';
 import type {
   AnsiColor,
   AnimationDirection,
@@ -92,26 +93,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-// Visual ANSI color swatches (A-G)
-const ANSI_HEX: Record<AnsiColor, string> = {
-  default: 'transparent',
-  black: '#000000',
-  red: '#cc0000',
-  green: '#00aa00',
-  yellow: '#aaaa00',
-  blue: '#0000cc',
-  magenta: '#aa00aa',
-  cyan: '#00aaaa',
-  white: '#aaaaaa',
-  brightBlack: '#555555',
-  brightRed: '#ff5555',
-  brightGreen: '#55ff55',
-  brightYellow: '#ffff55',
-  brightBlue: '#5555ff',
-  brightMagenta: '#ff55ff',
-  brightCyan: '#55ffff',
-  brightWhite: '#ffffff',
-};
+const CHECKERBOARD = 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px';
 
 function ColorSelect({
   label,
@@ -122,9 +104,13 @@ function ColorSelect({
   value?: AnsiColor;
   onChange: (v: AnsiColor) => void;
 }) {
+  const theme = getTheme(useEditor((s) => s.project.theme));
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = value ?? 'default';
+
+  const swatchColor = (c: AnsiColor) =>
+    c === 'default' ? CHECKERBOARD : (theme.ansi[c as Exclude<AnsiColor, 'default'>] ?? '#888');
 
   useEffect(() => {
     if (!open) return;
@@ -145,7 +131,7 @@ function ColorSelect({
         >
           <span
             className="inline-block w-4 h-4 rounded-sm border border-ink-500 shrink-0"
-            style={{ background: ANSI_HEX[current] }}
+            style={{ background: swatchColor(current) }}
           />
           <span className="truncate">{current}</span>
         </button>
@@ -158,7 +144,7 @@ function ColorSelect({
                   type="button"
                   title={c}
                   className={`w-8 h-8 rounded border-2 transition-transform hover:scale-110 ${current === c ? 'border-accent' : 'border-transparent'}`}
-                  style={{ background: c === 'default' ? 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px' : ANSI_HEX[c] }}
+                  style={{ background: swatchColor(c) }}
                   onClick={() => { onChange(c); setOpen(false); }}
                 />
               ))}
@@ -655,7 +641,6 @@ function ContentSection({ node }: { node: ComponentNode }) {
         </Section>
       );
     case 'select':
-    case 'list':
     case 'tabs':
       return (
         <Section title="Items">
@@ -683,6 +668,53 @@ function ContentSection({ node }: { node: ComponentNode }) {
             />
           </Field>
         </Section>
+      );
+    case 'list':
+      return (
+        <>
+          <Section title="Items">
+            <div className="col-span-2">
+              <Field label="Items (one per line)">
+                <textarea
+                  className="input min-h-[80px]"
+                  value={(p.items ?? []).join('\n')}
+                  onChange={(e) =>
+                    setProp(
+                      'items',
+                      e.target.value.split('\n').map((s) => s.trimEnd()),
+                    )
+                  }
+                />
+              </Field>
+            </div>
+            <Field label="Selected index">
+              <input
+                type="number"
+                min={0}
+                className="input"
+                value={p.selectedIndex ?? 0}
+                onChange={(e) => setProp('selectedIndex', Number(e.target.value) || 0)}
+              />
+            </Field>
+          </Section>
+          <Section title="List Style">
+            <div className="col-span-2">
+              <Field label="Selection icon">
+                <input
+                  className="input"
+                  value={p.listIcon ?? '›'}
+                  maxLength={4}
+                  onChange={(e) => setProp('listIcon', e.target.value)}
+                  placeholder="›"
+                />
+              </Field>
+            </div>
+            <ColorSelect label="Selected fg" value={p.listSelectedFg} onChange={(v) => setProp('listSelectedFg', v)} />
+            <ColorSelect label="Selected bg" value={p.listSelectedBg} onChange={(v) => setProp('listSelectedBg', v)} />
+            <ColorSelect label="Unselected fg" value={p.listUnselectedFg} onChange={(v) => setProp('listUnselectedFg', v)} />
+            <ColorSelect label="Unselected bg" value={p.listUnselectedBg} onChange={(v) => setProp('listUnselectedBg', v)} />
+          </Section>
+        </>
       );
     case 'progressbar':
       return (
@@ -885,31 +917,23 @@ function RichSpansEditor({
         <button className="btn text-[10px] px-1 py-0.5" onClick={add}>+ span</button>
       </div>
       {list.map((span, i) => (
-        <div key={i} className="flex gap-1 items-center">
-          <input
-            className="input flex-1 text-xs"
-            value={span.text}
-            placeholder="text"
-            onChange={(e) => update(i, { text: e.target.value })}
-          />
-          <select
-            className="input w-20 text-xs"
-            value={span.fg ?? 'default'}
-            onChange={(e) => update(i, { fg: e.target.value as AnsiColor })}
-          >
-            {ANSI_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select
-            className="input w-20 text-xs"
-            value={span.bg ?? 'default'}
-            onChange={(e) => update(i, { bg: e.target.value as AnsiColor })}
-          >
-            {ANSI_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <button
-            className="text-ink-300 hover:text-red-400 text-xs"
-            onClick={() => remove(i)}
-          >✕</button>
+        <div key={i} className="flex flex-col gap-1 bg-ink-700 rounded p-1.5">
+          <div className="flex gap-1 items-center">
+            <input
+              className="input flex-1 text-xs"
+              value={span.text}
+              placeholder="text"
+              onChange={(e) => update(i, { text: e.target.value })}
+            />
+            <button
+              className="text-ink-300 hover:text-red-400 text-xs shrink-0"
+              onClick={() => remove(i)}
+            >✕</button>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <ColorSelect label="fg" value={span.fg ?? 'default'} onChange={(v) => update(i, { fg: v })} />
+            <ColorSelect label="bg" value={span.bg ?? 'default'} onChange={(v) => update(i, { bg: v })} />
+          </div>
         </div>
       ))}
     </div>

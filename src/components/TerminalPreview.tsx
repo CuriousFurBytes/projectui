@@ -473,7 +473,7 @@ function CellGrid({
                 key={i}
                 style={{
                   color: run.fg ?? theme.fg,
-                  background: run.bg,
+                  backgroundColor: run.bg,
                   fontWeight: run.bold ? 700 : undefined,
                 }}
               >

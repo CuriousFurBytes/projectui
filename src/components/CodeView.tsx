@@ -1,12 +1,11 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, memo } from 'react';
 import clsx from 'clsx';
 import { useEditor } from '@/store/editorStore';
 import { exportTextual } from '@/exporters/textualExporter';
 import { exportBubbleTea } from '@/exporters/bubbleTeaExporter';
 import { exportRatatui } from '@/exporters/ratauiExporter';
 import { runPython, isPyodideReady, loadPyodideRuntime } from '@/wasm/pyodideRunner';
-
-type Lang = 'textual' | 'bubbletea' | 'ratatui' | 'json';
+import { tokenize, TOKEN_COLORS, type Lang } from '@/lib/highlight';
 
 const TABS: { value: Lang; label: string; ext: string }[] = [
   { value: 'textual', label: 'Python · Textual', ext: 'py' },
@@ -139,7 +138,9 @@ except SyntaxError as e:
         </div>
       </div>
       <div className="flex-1 min-h-0 grid grid-rows-[1fr_auto]">
-        <pre className="overflow-auto p-4 text-xs leading-relaxed whitespace-pre">{code}</pre>
+        <div className="overflow-auto p-4 font-mono text-xs leading-relaxed">
+          <HighlightedCode code={code} lang={lang} />
+        </div>
         {pyOutput && (
           <div className="border-t border-ink-600 bg-ink-800 max-h-48 overflow-auto p-3">
             <div className="label mb-1">Pyodide output</div>
@@ -150,3 +151,23 @@ except SyntaxError as e:
     </div>
   );
 }
+
+const HighlightedCode = memo(function HighlightedCode({ code, lang }: { code: string; lang: Lang }) {
+  const lines = useMemo(() => tokenize(code, lang), [code, lang]);
+  return (
+    <pre className="whitespace-pre">
+      {lines.map((tokens, li) => (
+        <div key={li}>
+          {tokens.map((tok, ti) => {
+            const color = TOKEN_COLORS[tok.type];
+            return color ? (
+              <span key={ti} style={{ color }}>{tok.text}</span>
+            ) : (
+              <span key={ti}>{tok.text}</span>
+            );
+          })}
+        </div>
+      ))}
+    </pre>
+  );
+});
