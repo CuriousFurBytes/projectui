@@ -22,7 +22,7 @@ import { DEFAULT_DESIGN_TOKENS } from '@/lib/designTokens';
 import { getAutosave } from '@/lib/autosave';
 import type { ViewportPreset } from '@/lib/viewportPresets';
 
-const STORAGE_KEY = 'tui-builder.project.v1';
+const STORAGE_KEY = 'projectui.project.v1';
 
 function makeDefaultLayer(name = 'Screen 1'): { layer: Layer; nodes: Record<string, ComponentNode> } {
   const rootId = uid('root');
@@ -36,7 +36,7 @@ function makeDefaultLayer(name = 'Screen 1'): { layer: Layer; nodes: Record<stri
   };
 
   const header = makeNode('container', rootId);
-  header.props = { ...header.props, direction: 'row', height: 3, border: 'rounded', title: ' tui-builder ', padding: 0 };
+  header.props = { ...header.props, direction: 'row', height: 3, border: 'rounded', title: ' ProjecTUI ', padding: 0 };
 
   const headerText = makeNode('text', header.id);
   headerText.props = { ...headerText.props, text: ' Welcome to your terminal app', fg: 'brightCyan' };
@@ -1024,7 +1024,7 @@ export const useEditor = create<EditorState>()(
         set({ project: migrated, selectedId: null, past: [], future: [] });
       },
     }),
-    { name: 'tui-builder' },
+    { name: 'ProjecTUI' },
   ),
 );
 

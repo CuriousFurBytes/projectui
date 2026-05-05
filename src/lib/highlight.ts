@@ -1,6 +1,6 @@
 // Lightweight regex-based syntax tokenizer for generated code (Python, Go, Rust, JSON).
 // No external dependencies — designed specifically for the deterministic code that
-// TUI Builder generates.
+// ProjecTUI generates.
 
 export type TokenType = 'keyword' | 'string' | 'comment' | 'number' | 'decorator' | 'type' | 'func' | 'key' | 'plain';
 

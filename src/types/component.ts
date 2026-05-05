@@ -1,4 +1,4 @@
-// Core schema for the TUI Builder.
+// Core schema for ProjecTUI.
 // The editor manipulates a normalized tree of `ComponentNode`s keyed by id.
 
 export type ComponentType =

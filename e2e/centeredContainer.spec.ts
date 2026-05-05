@@ -20,13 +20,13 @@ test.describe('Centered container in terminal canvas', () => {
     await page.screenshot({ path: `${SCREENSHOTS}/01-app-loaded.png`, fullPage: false });
   });
 
-  test('02 – terminal canvas renders the tui-builder header', async ({ page }) => {
+  test('02 – terminal canvas renders the ProjecTUI header', async ({ page }) => {
     await page.waitForSelector('div.font-mono', { timeout: 10000 });
 
-    // The header container has title ' tui-builder ' in the top border.
+    // The header container has title ' ProjecTUI ' in the top border.
     const canvas = page.locator('div.font-mono').first();
     const text = await canvas.textContent();
-    expect(text).toContain('tui-builder');
+    expect(text).toContain('ProjecTUI');
 
     await page.screenshot({ path: `${SCREENSHOTS}/02-header-visible.png` });
   });

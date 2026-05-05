@@ -1,9 +1,9 @@
 {
-  "name": "tui-builder",
+  "name": "projectui",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Visual web-based TUI builder. Design terminal UIs and export Textual (Python) or Bubble Tea (Go) code.",
+  "description": "ProjecTUI — visually design terminal UIs in the browser and export runnable code for Textual (Python), Bubble Tea (Go), or Ratatui (Rust).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -81,7 +81,7 @@ export function TopBar({
     <header className="h-11 shrink-0 border-b border-ink-600 bg-ink-800 flex items-center px-3 gap-2 overflow-x-auto">
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-accent font-bold">&gt;_</span>
-        <span className="text-sm font-semibold">TUI Builder</span>
+        <span className="text-sm font-semibold">ProjecTUI</span>
         <span className="text-[10px] text-ink-300 ml-1">v0.1</span>
       </div>
 

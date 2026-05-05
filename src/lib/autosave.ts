@@ -1,6 +1,6 @@
 import type { ProjectState } from '@/types/component';
 
-const AUTOSAVE_KEY = 'tui-builder.autosaves';
+const AUTOSAVE_KEY = 'projectui.autosaves';
 const MAX_SNAPSHOTS = 10;
 
 interface AutosaveEntry {
