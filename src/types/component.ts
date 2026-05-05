@@ -22,7 +22,10 @@ export type ComponentType =
   | 'viewport'
   | 'timer'
   | 'filepicker'
-  | 'asciitext';
+  | 'asciitext'
+  | 'treeview'
+  | 'metriccard'
+  | 'markdowntext';
 
 export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick' | 'ascii';
 export type Direction = 'row' | 'column';
@@ -140,7 +143,37 @@ export interface ComponentProps {
   // Behavior
   focusable?: boolean;
   disabled?: boolean;
+
+  // Layout constraints (Idea #5)
+  constraints?: LayoutConstraints;
+
+  // Mock data binding (Idea #6)
+  mockDatasetId?: string;
+
+  // New component props (Idea #9)
+  treeItems?: TreeItem[];
+  metricValue?: string;
+  metricLabel?: string;
+  metricDelta?: string;
+  markdownContent?: string;
 }
+
+export type PinConstraint = 'left' | 'right' | 'top' | 'bottom' | 'fill' | 'intrinsic' | 'fixed';
+
+export interface LayoutConstraints {
+  horizontal?: PinConstraint;
+  vertical?: PinConstraint;
+}
+
+export interface TreeItem {
+  label: string;
+  children?: TreeItem[];
+  expanded?: boolean;
+}
+
+export type StateVariantName = 'default' | 'focus' | 'hover' | 'active' | 'disabled' | 'error' | string;
+
+export type StateVariantProps = Partial<Pick<ComponentProps, 'fg' | 'bg' | 'bold' | 'border' | 'borderColor'>>;
 
 export interface ComponentNode {
   id: string;
@@ -152,6 +185,8 @@ export interface ComponentNode {
   hidden?: boolean;
   locked?: boolean;
   name?: string;
+  // State variants (Idea #6)
+  stateVariants?: Record<string, StateVariantProps>;
 }
 
 // One screen / artboard in the project.
@@ -189,6 +224,30 @@ export interface ComponentVariant {
   createdAt: number;
 }
 
+export type TokenType = 'color' | 'spacing' | 'border' | 'text';
+
+export interface DesignToken {
+  id: string;
+  name: string;
+  type: TokenType;
+  value: string;
+  group?: string;
+}
+
+export interface MockDataset {
+  id: string;
+  name: string;
+  data: unknown[];
+}
+
+export interface ProjectMetadata {
+  name?: string;
+  description?: string;
+  tags?: string[];
+  version?: string;
+  createdAt?: number;
+}
+
 export interface ProjectState {
   // Active-screen data (kept at top level for renderer / exporter compat)
   rootId: string;
@@ -204,6 +263,12 @@ export interface ProjectState {
   timelineTransitions?: TimelineTransition[];
   // Reusable component variants
   variants?: ComponentVariant[];
+  // Design tokens (Idea #1)
+  tokens?: DesignToken[];
+  // Mock datasets (Idea #6)
+  mockDatasets?: MockDataset[];
+  // Project metadata (Idea #10)
+  metadata?: ProjectMetadata;
 }
 
 export type ThemeName = 'dracula' | 'solarized-dark' | 'tokyo-night' | 'mono';

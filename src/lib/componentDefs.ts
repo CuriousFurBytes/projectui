@@ -320,6 +320,56 @@ export const COMPONENT_DEFS: ComponentDef[] = [
       direction: 'column',
     },
   },
+  // ── Idea #9: Richer components ────────────────────────────────────────────
+  {
+    type: 'treeview',
+    label: 'Tree View',
+    group: 'advanced',
+    icon: '⊳',
+    description: 'Hierarchical tree of items with expand/collapse.',
+    acceptsChildren: false,
+    defaults: {
+      width: 'fill',
+      height: 'fill',
+      border: 'single',
+      title: ' Tree ',
+      treeItems: [
+        { label: 'Root', expanded: true, children: [
+          { label: 'Child 1' },
+          { label: 'Child 2', children: [{ label: 'Grandchild' }] },
+        ]},
+      ],
+    },
+  },
+  {
+    type: 'metriccard',
+    label: 'Metric Card',
+    group: 'advanced',
+    icon: '◈',
+    description: 'KPI card showing a metric value with optional label and delta.',
+    acceptsChildren: false,
+    defaults: {
+      width: 20,
+      height: 5,
+      border: 'rounded',
+      metricValue: '1,234',
+      metricLabel: 'Total Requests',
+      metricDelta: '+12%',
+    },
+  },
+  {
+    type: 'markdowntext',
+    label: 'Markdown',
+    group: 'advanced',
+    icon: 'M',
+    description: 'Markdown-rich text block rendered as styled spans.',
+    acceptsChildren: false,
+    defaults: {
+      width: 'fill',
+      height: 'auto',
+      markdownContent: '**Bold** and _italic_ text.',
+    },
+  },
 ];
 
 export function getDef(type: ComponentType): ComponentDef {
@@ -329,12 +379,13 @@ export function getDef(type: ComponentType): ComponentDef {
 }
 
 export function makeNode(type: ComponentType, parentId: string | null): ComponentNode {
-  const def = getDef(type);
+  const def = COMPONENT_DEFS.find((d) => d.type === type);
+  const props: ComponentProps = def ? (JSON.parse(JSON.stringify(def.defaults)) as ComponentProps) : {};
   return {
     id: uid(type),
     type,
     parentId,
     children: [],
-    props: JSON.parse(JSON.stringify(def.defaults)) as ComponentProps,
+    props,
   };
 }

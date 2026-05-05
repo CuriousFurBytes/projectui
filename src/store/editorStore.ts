@@ -5,8 +5,12 @@ import type {
   ComponentProps,
   ComponentType,
   ComponentVariant,
+  DesignToken,
   Layer,
+  MockDataset,
+  ProjectMetadata,
   ProjectState,
+  StateVariantProps,
   ThemeName,
   TimelineStep,
   TimelineTransition,
@@ -14,6 +18,9 @@ import type {
 import { getDef, makeNode } from '@/lib/componentDefs';
 import { uid } from '@/lib/id';
 import { variantFromSubtree, cloneSubtreeWithNewIds } from '@/lib/variantUtils';
+import { DEFAULT_DESIGN_TOKENS } from '@/lib/designTokens';
+import { getAutosave } from '@/lib/autosave';
+import type { ViewportPreset } from '@/lib/viewportPresets';
 
 const STORAGE_KEY = 'tui-builder.project.v1';
 
@@ -96,6 +103,8 @@ function makeInitialProject(): ProjectState {
     activeLayerIndex: 0,
     timelineSteps: [{ id: uid('step'), layerId: layer.id, label: 'Screen 1' }],
     timelineTransitions: [],
+    tokens: JSON.parse(JSON.stringify(DEFAULT_DESIGN_TOKENS)) as DesignToken[],
+    mockDatasets: [],
   };
 }
 
@@ -129,6 +138,12 @@ function migrateProject(p: ProjectState): ProjectState {
   }
   if (!project.timelineTransitions) {
     project = { ...project, timelineTransitions: [] };
+  }
+  if (!project.tokens) {
+    project = { ...project, tokens: JSON.parse(JSON.stringify(DEFAULT_DESIGN_TOKENS)) as DesignToken[] };
+  }
+  if (!project.mockDatasets) {
+    project = { ...project, mockDatasets: [] };
   }
   return project;
 }
@@ -209,6 +224,29 @@ interface EditorState {
   toggleSelectId: (id: string) => void;
   clearMultiSelect: () => void;
   removeSelected: () => void;
+  // Grouping & alignment (Idea #3)
+  groupNodes: (ids: string[], parentId: string) => string;
+  ungroupNode: (id: string) => void;
+  alignNodes: (ids: string[], alignment: 'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom') => void;
+  // Viewport presets (Idea #5)
+  applyViewportPreset: (preset: ViewportPreset) => void;
+  // Design token actions (Idea #1)
+  addToken: (token: Omit<DesignToken, 'id'>) => string;
+  removeToken: (id: string) => void;
+  updateToken: (id: string, value: string) => void;
+  renameToken: (id: string, name: string) => void;
+  // Mock dataset actions (Idea #6)
+  addMockDataset: (name: string, data: unknown[]) => string;
+  removeMockDataset: (id: string) => void;
+  updateMockDataset: (id: string, data: unknown[]) => void;
+  bindMockData: (nodeId: string, datasetId: string) => void;
+  // State variants (Idea #6)
+  setNodeStateVariant: (nodeId: string, state: string, props: StateVariantProps) => void;
+  removeNodeStateVariant: (nodeId: string, state: string) => void;
+  // Project metadata (Idea #10)
+  setProjectMetadata: (meta: ProjectMetadata) => void;
+  // Recovery snapshots (Idea #10)
+  restoreAutosave: (index: number) => void;
 }
 
 const cloneProject = (p: ProjectState): ProjectState => JSON.parse(JSON.stringify(p)) as ProjectState;
@@ -741,6 +779,249 @@ export const useEditor = create<EditorState>()(
         const project = syncActiveLayer({ ...state.project, components });
         saveProject(project);
         set({ ...next, project, selectedId: null, selectedIds: new Set() });
+      },
+
+      // ── Grouping & Alignment (Idea #3) ──────────────────────────────────
+      groupNodes: (ids, parentId) => {
+        const state = get();
+        if (ids.length === 0) return '';
+        const parent = state.project.components[parentId];
+        if (!parent) return '';
+        const next = pushHistory(state);
+        const components = { ...state.project.components };
+        const group = makeNode('container', parentId);
+        group.props = { ...group.props, direction: 'column', border: 'none', padding: 0 };
+        components[group.id] = group;
+        const groupChildren: string[] = [];
+        for (const id of ids) {
+          const node = components[id];
+          if (!node) continue;
+          components[id] = { ...node, parentId: group.id };
+          groupChildren.push(id);
+        }
+        components[group.id] = { ...components[group.id], children: groupChildren };
+        const parentChildren = parent.children.filter((c) => !ids.includes(c));
+        const firstIdx = parent.children.findIndex((c) => ids.includes(c));
+        const insertAt = firstIdx >= 0 ? firstIdx : parentChildren.length;
+        parentChildren.splice(insertAt, 0, group.id);
+        components[parentId] = { ...parent, children: parentChildren };
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: group.id });
+        return group.id;
+      },
+
+      ungroupNode: (id) => {
+        const state = get();
+        const node = state.project.components[id];
+        if (!node || !node.parentId) return;
+        const parent = state.project.components[node.parentId];
+        if (!parent) return;
+        const next = pushHistory(state);
+        const components = { ...state.project.components };
+        const insertIdx = parent.children.indexOf(id);
+        const newParentChildren = [...parent.children];
+        newParentChildren.splice(insertIdx, 1, ...node.children);
+        components[node.parentId] = { ...parent, children: newParentChildren };
+        for (const childId of node.children) {
+          const child = components[childId];
+          if (child) components[childId] = { ...child, parentId: node.parentId };
+        }
+        delete components[id];
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: null });
+      },
+
+      alignNodes: (ids, alignment) => {
+        const state = get();
+        if (ids.length === 0) return;
+        const next = pushHistory(state);
+        const components = { ...state.project.components };
+        const nodes = ids.map((id) => components[id]).filter(Boolean);
+        if (nodes.length === 0) return;
+
+        if (alignment === 'left') {
+          const minX = Math.min(...nodes.map((n) => n.props.x ?? 0));
+          for (const id of ids) {
+            const n = components[id];
+            if (n) components[id] = { ...n, props: { ...n.props, x: minX } };
+          }
+        } else if (alignment === 'right') {
+          const maxX = Math.max(...nodes.map((n) => (n.props.x ?? 0) + (typeof n.props.width === 'number' ? n.props.width : 0)));
+          for (const id of ids) {
+            const n = components[id];
+            const w = typeof n?.props.width === 'number' ? n.props.width : 0;
+            if (n) components[id] = { ...n, props: { ...n.props, x: maxX - w } };
+          }
+        } else if (alignment === 'top') {
+          const minY = Math.min(...nodes.map((n) => n.props.y ?? 0));
+          for (const id of ids) {
+            const n = components[id];
+            if (n) components[id] = { ...n, props: { ...n.props, y: minY } };
+          }
+        } else if (alignment === 'bottom') {
+          const maxY = Math.max(...nodes.map((n) => (n.props.y ?? 0) + (typeof n.props.height === 'number' ? n.props.height : 0)));
+          for (const id of ids) {
+            const n = components[id];
+            const h = typeof n?.props.height === 'number' ? n.props.height : 0;
+            if (n) components[id] = { ...n, props: { ...n.props, y: maxY - h } };
+          }
+        } else if (alignment === 'center-h') {
+          const xs = nodes.map((n) => n.props.x ?? 0);
+          const widths = nodes.map((n) => (typeof n.props.width === 'number' ? n.props.width : 0));
+          const centerX = (Math.min(...xs) + Math.max(...xs.map((x, i) => x + widths[i]))) / 2;
+          for (const id of ids) {
+            const n = components[id];
+            const w = typeof n?.props.width === 'number' ? n.props.width : 0;
+            if (n) components[id] = { ...n, props: { ...n.props, x: Math.round(centerX - w / 2) } };
+          }
+        } else if (alignment === 'center-v') {
+          const ys = nodes.map((n) => n.props.y ?? 0);
+          const heights = nodes.map((n) => (typeof n.props.height === 'number' ? n.props.height : 0));
+          const centerY = (Math.min(...ys) + Math.max(...ys.map((y, i) => y + heights[i]))) / 2;
+          for (const id of ids) {
+            const n = components[id];
+            const h = typeof n?.props.height === 'number' ? n.props.height : 0;
+            if (n) components[id] = { ...n, props: { ...n.props, y: Math.round(centerY - h / 2) } };
+          }
+        }
+
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── Viewport presets (Idea #5) ───────────────────────────────────────
+      applyViewportPreset: (preset) => {
+        const state = get();
+        if (preset.cols === state.project.termCols && preset.rows === state.project.termRows) return;
+        const next = pushHistory(state);
+        const project = { ...state.project, termCols: preset.cols, termRows: preset.rows };
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── Design token actions (Idea #1) ───────────────────────────────────
+      addToken: (tokenData) => {
+        const state = get();
+        const token: DesignToken = { id: uid('token'), ...tokenData };
+        const next = pushHistory(state);
+        const tokens = [...(state.project.tokens ?? []), token];
+        const project = { ...state.project, tokens };
+        saveProject(project);
+        set({ ...next, project });
+        return token.id;
+      },
+
+      removeToken: (id) => {
+        const state = get();
+        const next = pushHistory(state);
+        const tokens = (state.project.tokens ?? []).filter((t) => t.id !== id);
+        const project = { ...state.project, tokens };
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      updateToken: (id, value) => {
+        const state = get();
+        const next = pushHistory(state);
+        const tokens = (state.project.tokens ?? []).map((t) => t.id === id ? { ...t, value } : t);
+        const project = { ...state.project, tokens };
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      renameToken: (id, name) => {
+        const state = get();
+        const next = pushHistory(state);
+        const tokens = (state.project.tokens ?? []).map((t) => t.id === id ? { ...t, name } : t);
+        const project = { ...state.project, tokens };
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── Mock dataset actions (Idea #6) ───────────────────────────────────
+      addMockDataset: (name, data) => {
+        const state = get();
+        const dataset: MockDataset = { id: uid('ds'), name, data };
+        const mockDatasets = [...(state.project.mockDatasets ?? []), dataset];
+        const project = { ...state.project, mockDatasets };
+        saveProject(project);
+        set({ project });
+        return dataset.id;
+      },
+
+      removeMockDataset: (id) => {
+        const state = get();
+        const mockDatasets = (state.project.mockDatasets ?? []).filter((d) => d.id !== id);
+        const project = { ...state.project, mockDatasets };
+        saveProject(project);
+        set({ project });
+      },
+
+      updateMockDataset: (id, data) => {
+        const state = get();
+        const mockDatasets = (state.project.mockDatasets ?? []).map((d) => d.id === id ? { ...d, data } : d);
+        const project = { ...state.project, mockDatasets };
+        saveProject(project);
+        set({ project });
+      },
+
+      bindMockData: (nodeId, datasetId) => {
+        const state = get();
+        const node = state.project.components[nodeId];
+        if (!node) return;
+        const next = pushHistory(state);
+        const components = { ...state.project.components, [nodeId]: { ...node, props: { ...node.props, mockDatasetId: datasetId } } };
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── State variant actions (Idea #6) ─────────────────────────────────
+      setNodeStateVariant: (nodeId, state: string, props) => {
+        const editorState = get();
+        const node = editorState.project.components[nodeId];
+        if (!node) return;
+        const next = pushHistory(editorState);
+        const stateVariants = { ...(node.stateVariants ?? {}), [state]: props };
+        const components = { ...editorState.project.components, [nodeId]: { ...node, stateVariants } };
+        const project = syncActiveLayer({ ...editorState.project, components });
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      removeNodeStateVariant: (nodeId, variantState) => {
+        const editorState = get();
+        const node = editorState.project.components[nodeId];
+        if (!node) return;
+        const next = pushHistory(editorState);
+        const stateVariants = { ...(node.stateVariants ?? {}) };
+        delete stateVariants[variantState];
+        const components = { ...editorState.project.components, [nodeId]: { ...node, stateVariants } };
+        const project = syncActiveLayer({ ...editorState.project, components });
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── Project metadata (Idea #10) ─────────────────────────────────────
+      setProjectMetadata: (meta) => {
+        const state = get();
+        const next = pushHistory(state);
+        const metadata = { ...(state.project.metadata ?? {}), ...meta };
+        const project = { ...state.project, metadata };
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      // ── Recovery snapshots (Idea #10) ────────────────────────────────────
+      restoreAutosave: (index) => {
+        const saved = getAutosave(index);
+        if (!saved) return;
+        const migrated = migrateProject(saved);
+        saveProject(migrated);
+        set({ project: migrated, selectedId: null, past: [], future: [] });
       },
     }),
     { name: 'tui-builder' },
