@@ -910,7 +910,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
               <select
                 className="input"
                 value={p.asciiFont ?? 'block'}
-                onChange={(e) => setProp('asciiFont', e.target.value)}
+                onChange={(e) => setProp('asciiFont', e.target.value as import('@/types/component').AsciiFont)}
               >
                 <option value="block">Block (filled)</option>
                 <option value="slim">Slim (line-art)</option>

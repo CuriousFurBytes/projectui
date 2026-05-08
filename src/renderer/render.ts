@@ -450,6 +450,14 @@ function intrinsicWidth(node: ComponentNode): number {
       return 30;
     case 'asciitext':
       return Math.max(10, (p.text ?? '').length * 6);
+    case 'line':
+      return p.width && typeof p.width === 'number' ? p.width : 10;
+    case 'circle':
+      return (p.radius ?? 3) * 2 + 1;
+    case 'polygon':
+      return p.width && typeof p.width === 'number' ? p.width : 10;
+    case 'chart':
+      return p.width && typeof p.width === 'number' ? p.width : 24;
     case 'viewport':
     case 'grid':
       return 20;
@@ -494,6 +502,14 @@ function intrinsicHeight(node: ComponentNode): number {
       return 8;
     case 'asciitext':
       return 5;
+    case 'line':
+      return p.height && typeof p.height === 'number' ? p.height : 1;
+    case 'circle':
+      return p.height && typeof p.height === 'number' ? p.height : (p.radius ?? 3) * 2 + 1;
+    case 'polygon':
+      return p.height && typeof p.height === 'number' ? p.height : 5;
+    case 'chart':
+      return p.height && typeof p.height === 'number' ? p.height : 8;
     case 'viewport':
       return 8;
     case 'grid':
@@ -665,6 +681,24 @@ function layoutGrid(
 }
 
 // ────────────────────────────────────────────────────────────────────────
+// Text alignment helper
+// ────────────────────────────────────────────────────────────────────────
+
+function alignOffset(
+  align: 'left' | 'center' | 'right' | undefined,
+  textLen: number,
+  width: number,
+  baseX: number,
+): number {
+  if (align === 'center') {
+    return baseX + Math.floor(Math.max(0, width - textLen) / 2);
+  } else if (align === 'right') {
+    return baseX + Math.max(0, width - textLen);
+  }
+  return baseX; // left (default)
+}
+
+// ────────────────────────────────────────────────────────────────────────
 // Paint
 // ────────────────────────────────────────────────────────────────────────
 
@@ -708,7 +742,39 @@ function paintNode(
           cx += span.text.length;
         }
       } else {
-        writeText(grid, rect.x, rect.y, p.text ?? '', rect.w, p.fg, p.bg, p.bold);
+        const rawText = p.text ?? '';
+        const wrap = p.textWrap;
+        const align = p.textAlign;
+
+        if (wrap === 'wrap') {
+          // Word-wrap into multiple rows
+          const words = rawText.split(' ');
+          const lines: string[] = [];
+          let current = '';
+          for (const word of words) {
+            const candidate = current ? `${current} ${word}` : word;
+            if (candidate.length <= rect.w) {
+              current = candidate;
+            } else {
+              if (current) lines.push(current);
+              current = word.slice(0, rect.w);
+            }
+          }
+          if (current) lines.push(current);
+          lines.slice(0, rect.h).forEach((line, i) => {
+            const tx = alignOffset(align, line.length, rect.w, rect.x);
+            writeText(grid, tx, rect.y + i, line, rect.w, p.fg, p.bg, p.bold);
+          });
+        } else if (wrap === 'ellipsis' && rawText.length > rect.w) {
+          const truncated = rawText.slice(0, Math.max(0, rect.w - 1)) + '…';
+          const tx = alignOffset(align, truncated.length, rect.w, rect.x);
+          writeText(grid, tx, rect.y, truncated, rect.w, p.fg, p.bg, p.bold);
+        } else {
+          // truncate / clip / default
+          const line = rawText.slice(0, Math.max(0, rect.w));
+          const tx = alignOffset(align, line.length, rect.w, rect.x);
+          writeText(grid, tx, rect.y, line, rect.w, p.fg, p.bg, p.bold);
+        }
       }
       break;
     }
@@ -925,6 +991,172 @@ function paintNode(
     }
     case 'asciitext': {
       renderAsciiText(grid, rect, p.text ?? 'TEXT', p.fg, p.bg, p.asciiFont);
+      break;
+    }
+    case 'line': {
+      const char = p.shapeChar ?? (p.orientation === 'vertical' ? '│' : '─');
+      if (p.orientation === 'vertical') {
+        for (let yy = rect.y; yy < rect.y + rect.h; yy++) {
+          setCell(grid, rect.x, yy, { ch: char, fg: p.fg });
+        }
+      } else {
+        for (let xx = rect.x; xx < rect.x + rect.w; xx++) {
+          setCell(grid, xx, rect.y, { ch: char, fg: p.fg });
+        }
+      }
+      break;
+    }
+    case 'circle': {
+      const radius = p.radius ?? 3;
+      const char = p.shapeChar ?? '*';
+      const cx = rect.x + radius;
+      const cy = rect.y + Math.floor(radius / 2);
+      for (let angle = 0; angle < 360; angle++) {
+        const rad = (angle * Math.PI) / 180;
+        const x = Math.round(cx + radius * Math.cos(rad));
+        const y = Math.round(cy + radius * 0.5 * Math.sin(rad));
+        if (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h) {
+          setCell(grid, x, y, { ch: char, fg: p.fg });
+        }
+      }
+      break;
+    }
+    case 'polygon': {
+      const char = p.shapeChar ?? '#';
+      const points = p.points;
+      if (points && points.length >= 2) {
+        // Draw lines between consecutive points (Bresenham's line)
+        const drawLine = (x0: number, y0: number, x1: number, y1: number) => {
+          const dx = Math.abs(x1 - x0);
+          const dy = Math.abs(y1 - y0);
+          const sx = x0 < x1 ? 1 : -1;
+          const sy = y0 < y1 ? 1 : -1;
+          let err = dx - dy;
+          let cx = x0;
+          let cy = y0;
+          while (true) {
+            const gx = rect.x + cx;
+            const gy = rect.y + cy;
+            if (gx >= rect.x && gx < rect.x + rect.w && gy >= rect.y && gy < rect.y + rect.h) {
+              setCell(grid, gx, gy, { ch: char, fg: p.fg });
+            }
+            if (cx === x1 && cy === y1) break;
+            const e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; cx += sx; }
+            if (e2 < dx) { err += dx; cy += sy; }
+          }
+        };
+        for (let i = 0; i < points.length - 1; i++) {
+          const a = points[i]!;
+          const b = points[i + 1]!;
+          drawLine(a.x, a.y, b.x, b.y);
+        }
+        // Close the polygon
+        const first = points[0]!;
+        const last = points[points.length - 1]!;
+        drawLine(last.x, last.y, first.x, first.y);
+      } else {
+        // Fallback: simple rectangle outline
+        for (let xx = rect.x; xx < rect.x + rect.w; xx++) {
+          setCell(grid, xx, rect.y, { ch: char, fg: p.fg });
+          setCell(grid, xx, rect.y + rect.h - 1, { ch: char, fg: p.fg });
+        }
+        for (let yy = rect.y + 1; yy < rect.y + rect.h - 1; yy++) {
+          setCell(grid, rect.x, yy, { ch: char, fg: p.fg });
+          setCell(grid, rect.x + rect.w - 1, yy, { ch: char, fg: p.fg });
+        }
+      }
+      break;
+    }
+    case 'chart': {
+      const kind = p.chartKind ?? 'bar';
+      const data = p.chartData ?? [];
+      const labels = p.chartLabels ?? [];
+      const fg = p.fg ?? 'brightCyan';
+
+      if (kind === 'sparkline') {
+        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        if (data.length > 0) {
+          const minVal = Math.min(...data);
+          const maxVal = Math.max(...data);
+          const range = maxVal - minVal || 1;
+          data.slice(0, rect.w).forEach((val, i) => {
+            const normalized = (val - minVal) / range;
+            const charIdx = Math.min(7, Math.floor(normalized * 8));
+            setCell(grid, rect.x + i, rect.y, { ch: sparkChars[charIdx]!, fg });
+          });
+        }
+      } else if (kind === 'bar') {
+        const chartH = rect.h;
+        const numBars = data.length;
+        if (numBars > 0) {
+          const maxVal = p.chartMax ?? Math.max(...data, 1);
+          const barW = Math.max(1, Math.floor(rect.w / numBars));
+          data.forEach((val, i) => {
+            const barHeight = Math.round((val / maxVal) * (chartH - 1));
+            const bx = rect.x + i * barW;
+            for (let by = 0; by < barHeight; by++) {
+              const gy = rect.y + chartH - 1 - by;
+              if (gy >= rect.y && gy < rect.y + rect.h) {
+                for (let bxi = 0; bxi < barW - 1 && bx + bxi < rect.x + rect.w; bxi++) {
+                  setCell(grid, bx + bxi, gy, { ch: '█', fg });
+                }
+              }
+            }
+            // Label
+            const label = labels[i];
+            if (label && chartH > 0) {
+              const ly = rect.y + chartH - 1;
+              if (ly < rect.y + rect.h) {
+                writeText(grid, bx, ly, label.slice(0, barW), barW, fg);
+              }
+            }
+          });
+        }
+      } else if (kind === 'line') {
+        const chartH = rect.h - 1;
+        if (data.length > 1 && chartH > 0) {
+          const maxVal = p.chartMax ?? Math.max(...data, 1);
+          const minVal = Math.min(...data, 0);
+          const range = maxVal - minVal || 1;
+          const stepX = Math.max(1, Math.floor(rect.w / data.length));
+          const prevPoints: Array<{ x: number; y: number }> = [];
+          data.forEach((val, i) => {
+            const norm = (val - minVal) / range;
+            const px = rect.x + i * stepX;
+            const py = rect.y + chartH - Math.round(norm * chartH);
+            prevPoints.push({ x: px, y: py });
+            if (py >= rect.y && py < rect.y + rect.h) {
+              setCell(grid, px, py, { ch: '·', fg });
+            }
+          });
+          // Connect points
+          for (let i = 0; i < prevPoints.length - 1; i++) {
+            const a = prevPoints[i]!;
+            const b = prevPoints[i + 1]!;
+            if (b.y === a.y) {
+              for (let x = a.x + 1; x < b.x; x++) {
+                setCell(grid, x, a.y, { ch: '─', fg });
+              }
+            } else {
+              const mid = Math.floor((a.x + b.x) / 2);
+              const ch = b.y < a.y ? '/' : '\\';
+              setCell(grid, mid, Math.min(a.y, b.y) + (b.y < a.y ? 0 : 0), { ch, fg });
+            }
+          }
+        }
+      } else if (kind === 'pie') {
+        // Simple percentage text layout
+        if (data.length > 0) {
+          const total = data.reduce((s, v) => s + v, 0) || 1;
+          data.slice(0, rect.h).forEach((val, i) => {
+            const pct = Math.round((val / total) * 100);
+            const label = labels[i] ?? String(i);
+            const text = `${label}: ${pct}%`;
+            writeText(grid, rect.x, rect.y + i, text, rect.w, fg);
+          });
+        }
+      }
       break;
     }
   }

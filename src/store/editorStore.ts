@@ -6,6 +6,7 @@ import type {
   ComponentType,
   ComponentVariant,
   DesignToken,
+  KeyboardShortcutMap,
   Layer,
   MockDataset,
   ProjectMetadata,
@@ -14,6 +15,7 @@ import type {
   ThemeName,
   TimelineStep,
   TimelineTransition,
+  UserPreferences,
 } from '@/types/component';
 import { getDef, makeNode } from '@/lib/componentDefs';
 import { uid } from '@/lib/id';
@@ -171,6 +173,7 @@ function saveProject(project: ProjectState) {
 interface UndoEntry {
   project: ProjectState;
   selectedId: string | null;
+  label?: string;
 }
 
 interface EditorState {
@@ -180,6 +183,16 @@ interface EditorState {
   // history
   past: UndoEntry[];
   future: UndoEntry[];
+  undoLabel: () => string | undefined;
+  redoLabel: () => string | undefined;
+  // preferences
+  preferences: UserPreferences;
+  setPreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
+  resetPreferences: () => void;
+  // keyboard shortcuts
+  keyboardShortcuts: KeyboardShortcutMap;
+  setKeyboardShortcut: (action: string, combo: string) => void;
+  resetKeyboardShortcuts: () => void;
   // actions
   select: (id: string | null) => void;
   setHover: (id: string | null) => void;
@@ -228,6 +241,7 @@ interface EditorState {
   groupNodes: (ids: string[], parentId: string) => string;
   ungroupNode: (id: string) => void;
   alignNodes: (ids: string[], alignment: 'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom') => void;
+  distributeNodes: (ids: string[], axis: 'horizontal' | 'vertical') => void;
   // Viewport presets (Idea #5)
   applyViewportPreset: (preset: ViewportPreset) => void;
   // Design token actions (Idea #1)
@@ -249,10 +263,80 @@ interface EditorState {
   restoreAutosave: (index: number) => void;
 }
 
+const PREFS_KEY = 'projectui.preferences.v1';
+const SHORTCUTS_KEY = 'projectui.shortcuts.v1';
+
+const DEFAULT_PREFERENCES: UserPreferences = {
+  theme: 'tokyo-night',
+  editorUiTheme: 'dark',
+  showGrid: false,
+  showRulers: false,
+  snapToGrid: false,
+  gridSize: 4,
+  animationsEnabled: true,
+  reducedMotion: false,
+  autoSaveIntervalMs: 30000,
+  language: 'en',
+};
+
+const DEFAULT_SHORTCUTS: KeyboardShortcutMap = {
+  'undo': 'Meta+z',
+  'redo': 'Meta+Shift+z',
+  'delete': 'Backspace',
+  'copy': 'Meta+c',
+  'paste': 'Meta+v',
+  'duplicate': 'Meta+d',
+  'selectAll': 'Meta+a',
+  'commandPalette': 'Meta+k',
+  'save': 'Meta+s',
+  'export': 'Meta+e',
+  'toggleGrid': "Meta+'",
+  'toggleRulers': 'Meta+r',
+  'zoomIn': 'Meta+=',
+  'zoomOut': 'Meta+-',
+  'zoomReset': 'Meta+0',
+};
+
+function loadPreferences(): UserPreferences {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return { ...DEFAULT_PREFERENCES };
+    return { ...DEFAULT_PREFERENCES, ...(JSON.parse(raw) as Partial<UserPreferences>) };
+  } catch {
+    return { ...DEFAULT_PREFERENCES };
+  }
+}
+
+function savePreferences(prefs: UserPreferences): void {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    /* quota */
+  }
+}
+
+function loadShortcuts(): KeyboardShortcutMap {
+  try {
+    const raw = localStorage.getItem(SHORTCUTS_KEY);
+    if (!raw) return { ...DEFAULT_SHORTCUTS };
+    return Object.assign({}, DEFAULT_SHORTCUTS, JSON.parse(raw) as Partial<KeyboardShortcutMap>) as KeyboardShortcutMap;
+  } catch {
+    return { ...DEFAULT_SHORTCUTS };
+  }
+}
+
+function saveShortcuts(shortcuts: KeyboardShortcutMap): void {
+  try {
+    localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(shortcuts));
+  } catch {
+    /* quota */
+  }
+}
+
 const cloneProject = (p: ProjectState): ProjectState => JSON.parse(JSON.stringify(p)) as ProjectState;
 
-function pushHistory(state: EditorState): Pick<EditorState, 'past' | 'future'> {
-  const entry: UndoEntry = { project: cloneProject(state.project), selectedId: state.selectedId };
+function pushHistory(state: EditorState, label?: string): Pick<EditorState, 'past' | 'future'> {
+  const entry: UndoEntry = { project: cloneProject(state.project), selectedId: state.selectedId, label };
   const past = [...state.past, entry].slice(-50);
   return { past, future: [] };
 }
@@ -267,6 +351,35 @@ export const useEditor = create<EditorState>()(
       future: [],
       clipboardId: null,
       selectedIds: new Set<string>(),
+      preferences: loadPreferences(),
+      keyboardShortcuts: loadShortcuts(),
+
+      undoLabel: () => get().past.at(-1)?.label,
+      redoLabel: () => get().future.at(0)?.label,
+
+      setPreference: (key, value) => {
+        const prefs = { ...get().preferences, [key]: value };
+        savePreferences(prefs);
+        set({ preferences: prefs });
+      },
+
+      resetPreferences: () => {
+        const prefs = { ...DEFAULT_PREFERENCES };
+        savePreferences(prefs);
+        set({ preferences: prefs });
+      },
+
+      setKeyboardShortcut: (action, combo) => {
+        const shortcuts = { ...get().keyboardShortcuts, [action]: combo };
+        saveShortcuts(shortcuts);
+        set({ keyboardShortcuts: shortcuts });
+      },
+
+      resetKeyboardShortcuts: () => {
+        const shortcuts = { ...DEFAULT_SHORTCUTS };
+        saveShortcuts(shortcuts);
+        set({ keyboardShortcuts: shortcuts });
+      },
 
       select: (id) => set({ selectedId: id }),
       setHover: (id) => set({ hoverId: id }),
@@ -281,7 +394,7 @@ export const useEditor = create<EditorState>()(
           return '';
         }
         const node = makeNode(type, parentId);
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Add ' + type);
         const components = { ...state.project.components };
         components[node.id] = node;
         const newChildren = [...parent.children];
@@ -297,7 +410,7 @@ export const useEditor = create<EditorState>()(
       remove: (id) => {
         const state = get();
         if (id === state.project.rootId) return;
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Delete');
         const components = { ...state.project.components };
         const collect = (rid: string, acc: string[]) => {
           acc.push(rid);
@@ -320,7 +433,7 @@ export const useEditor = create<EditorState>()(
         const state = get();
         const node = state.project.components[id];
         if (!node) return;
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Rename');
         const components = { ...state.project.components, [id]: { ...node, name } };
         const project = syncActiveLayer({ ...state.project, components });
         saveProject(project);
@@ -331,7 +444,7 @@ export const useEditor = create<EditorState>()(
         const state = get();
         const node = state.project.components[id];
         if (!node) return;
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Edit props');
         const components = {
           ...state.project.components,
           [id]: { ...node, props: { ...node.props, ...patch } },
@@ -358,7 +471,7 @@ export const useEditor = create<EditorState>()(
         };
         if (subtreeContains(id, newParentId)) return;
 
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Move');
         const components = { ...state.project.components };
         if (node.parentId) {
           const oldParent = components[node.parentId];
@@ -441,7 +554,7 @@ export const useEditor = create<EditorState>()(
         if (!last) return;
         const future: UndoEntry[] = [
           ...state.future,
-          { project: cloneProject(state.project), selectedId: state.selectedId },
+          { project: cloneProject(state.project), selectedId: state.selectedId, label: last.label },
         ];
         saveProject(last.project);
         set({
@@ -787,7 +900,7 @@ export const useEditor = create<EditorState>()(
         if (ids.length === 0) return '';
         const parent = state.project.components[parentId];
         if (!parent) return '';
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Group');
         const components = { ...state.project.components };
         const group = makeNode('container', parentId);
         group.props = { ...group.props, direction: 'column', border: 'none', padding: 0 };
@@ -817,7 +930,7 @@ export const useEditor = create<EditorState>()(
         if (!node || !node.parentId) return;
         const parent = state.project.components[node.parentId];
         if (!parent) return;
-        const next = pushHistory(state);
+        const next = pushHistory(state, 'Ungroup');
         const components = { ...state.project.components };
         const insertIdx = parent.children.indexOf(id);
         const newParentChildren = [...parent.children];
@@ -884,6 +997,47 @@ export const useEditor = create<EditorState>()(
             const n = components[id];
             const h = typeof n?.props.height === 'number' ? n.props.height : 0;
             if (n) components[id] = { ...n, props: { ...n.props, y: Math.round(centerY - h / 2) } };
+          }
+        }
+
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project });
+      },
+
+      distributeNodes: (ids, axis) => {
+        const state = get();
+        if (ids.length < 3) return;
+        const next = pushHistory(state);
+        const components = { ...state.project.components };
+        const nodes = ids.map((id) => components[id]).filter(Boolean);
+        if (nodes.length < 3) return;
+
+        if (axis === 'horizontal') {
+          const sorted = [...nodes].sort((a, b) => (a.props.x ?? 0) - (b.props.x ?? 0));
+          const first = sorted[0].props.x ?? 0;
+          const lastNode = sorted[sorted.length - 1];
+          const lastX = (lastNode.props.x ?? 0) + (typeof lastNode.props.width === 'number' ? lastNode.props.width : 0);
+          const totalWidth = sorted.reduce((sum, n) => sum + (typeof n.props.width === 'number' ? n.props.width : 0), 0);
+          const gap = (lastX - first - totalWidth) / (sorted.length - 1);
+          let cursor = first;
+          for (const n of sorted) {
+            const w = typeof n.props.width === 'number' ? n.props.width : 0;
+            components[n.id] = { ...n, props: { ...n.props, x: Math.round(cursor) } };
+            cursor += w + gap;
+          }
+        } else {
+          const sorted = [...nodes].sort((a, b) => (a.props.y ?? 0) - (b.props.y ?? 0));
+          const first = sorted[0].props.y ?? 0;
+          const lastNode = sorted[sorted.length - 1];
+          const lastY = (lastNode.props.y ?? 0) + (typeof lastNode.props.height === 'number' ? lastNode.props.height : 0);
+          const totalHeight = sorted.reduce((sum, n) => sum + (typeof n.props.height === 'number' ? n.props.height : 0), 0);
+          const gap = (lastY - first - totalHeight) / (sorted.length - 1);
+          let cursor = first;
+          for (const n of sorted) {
+            const h = typeof n.props.height === 'number' ? n.props.height : 0;
+            components[n.id] = { ...n, props: { ...n.props, y: Math.round(cursor) } };
+            cursor += h + gap;
           }
         }
 

@@ -25,9 +25,17 @@ export type ComponentType =
   | 'asciitext'
   | 'treeview'
   | 'metriccard'
-  | 'markdowntext';
+  | 'markdowntext'
+  | 'line'
+  | 'circle'
+  | 'polygon'
+  | 'chart';
 
 export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick' | 'ascii';
+export type TextWrap = 'wrap' | 'truncate' | 'ellipsis' | 'clip';
+export type ChartKind = 'bar' | 'line' | 'pie' | 'sparkline';
+export type ShapeKind = 'line' | 'circle' | 'polygon' | 'rectangle';
+export type EventBindingType = 'onKey' | 'onTimer' | 'onFocus' | 'onBlur' | 'onClick';
 export type Direction = 'row' | 'column';
 export type Align = 'start' | 'center' | 'end' | 'stretch';
 export type TitleAlign = 'left' | 'center' | 'right';
@@ -76,6 +84,14 @@ export interface RichSpan {
   fg?: AnsiColor;
   bg?: AnsiColor;
   bold?: boolean;
+}
+
+export interface EventBinding {
+  type: EventBindingType;
+  key?: string;
+  intervalMs?: number;
+  action: string;
+  targetLayerId?: string;
 }
 
 export interface ComponentProps {
@@ -161,6 +177,28 @@ export interface ComponentProps {
   metricLabel?: string;
   metricDelta?: string;
   markdownContent?: string;
+
+  // Text display
+  textWrap?: TextWrap;
+  textAlign?: 'left' | 'center' | 'right';
+
+  // Spinner speed
+  spinnerSpeed?: number;
+
+  // Shape primitives
+  shapeKind?: ShapeKind;
+  radius?: number;
+  points?: Array<{ x: number; y: number }>;
+  shapeChar?: string;
+
+  // Chart
+  chartKind?: ChartKind;
+  chartData?: number[];
+  chartLabels?: string[];
+  chartMax?: number;
+
+  // Event bindings
+  eventBindings?: EventBinding[];
 }
 
 export type PinConstraint = 'left' | 'right' | 'top' | 'bottom' | 'fill' | 'intrinsic' | 'fixed';
@@ -192,6 +230,16 @@ export interface ComponentNode {
   name?: string;
   // State variants (Idea #6)
   stateVariants?: Record<string, StateVariantProps>;
+}
+
+export type ComponentNodeByType<T extends ComponentType> = ComponentNode & { type: T };
+
+export function isNodeOfType<T extends ComponentType>(node: ComponentNode, type: T): node is ComponentNodeByType<T> {
+  return node.type === type;
+}
+
+export function assertNever(x: never): never {
+  throw new Error('Unreachable: ' + String(x));
 }
 
 // One screen / artboard in the project.
@@ -253,6 +301,31 @@ export interface ProjectMetadata {
   createdAt?: number;
 }
 
+export interface UserPreferences {
+  theme: ThemeName;
+  editorUiTheme: 'dark' | 'light' | 'high-contrast';
+  showGrid: boolean;
+  showRulers: boolean;
+  snapToGrid: boolean;
+  gridSize: number;
+  animationsEnabled: boolean;
+  reducedMotion: boolean;
+  autoSaveIntervalMs: number;
+  language: string;
+}
+
+export type KeyboardShortcutMap = Record<string, string>;
+
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  author?: string;
+  componentTypes?: string[];
+  exporterIds?: string[];
+  enabled: boolean;
+}
+
 export interface ProjectState {
   // Active-screen data (kept at top level for renderer / exporter compat)
   rootId: string;
@@ -274,6 +347,10 @@ export interface ProjectState {
   mockDatasets?: MockDataset[];
   // Project metadata (Idea #10)
   metadata?: ProjectMetadata;
+  // User preferences, shortcuts, plugins
+  preferences?: UserPreferences;
+  keyboardShortcuts?: KeyboardShortcutMap;
+  plugins?: PluginManifest[];
 }
 
 export type ThemeName = 'dracula' | 'solarized-dark' | 'tokyo-night' | 'mono';

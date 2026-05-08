@@ -67,4 +67,14 @@ export const EXPORTER_CAPABILITIES: Record<string, ExporterCapability> = {
     partial: ['button', 'input', 'checkbox', 'select', 'spinner'],
     unsupported: ['modal', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
   },
+  blessed: {
+    supported: ['container', 'text', 'button', 'input', 'list', 'progressbar', 'table', 'tabs', 'modal'],
+    partial: ['statusbar', 'checkbox', 'select', 'textarea', 'divider'],
+    unsupported: ['spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+  },
+  ncurses: {
+    supported: ['container', 'text', 'button', 'input', 'list', 'progressbar', 'table', 'tabs'],
+    partial: ['modal', 'statusbar', 'checkbox', 'divider'],
+    unsupported: ['select', 'textarea', 'spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+  },
 };

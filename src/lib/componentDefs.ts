@@ -4,7 +4,7 @@ import { uid } from './id';
 export interface ComponentDef {
   type: ComponentType;
   label: string;
-  group: 'layout' | 'basic' | 'advanced';
+  group: 'layout' | 'basic' | 'advanced' | 'shape';
   icon: string; // single-char glyph rendered in the palette
   description: string;
   defaults: ComponentProps;
@@ -368,6 +368,51 @@ export const COMPONENT_DEFS: ComponentDef[] = [
       width: 'fill',
       height: 'auto',
       markdownContent: '**Bold** and _italic_ text.',
+    },
+  },
+  // ── Shape primitives ──────────────────────────────────────────────────────
+  {
+    type: 'line',
+    label: 'Line',
+    group: 'shape',
+    icon: '╌',
+    description: 'Draw a line using ASCII/Unicode characters',
+    acceptsChildren: false,
+    defaults: { orientation: 'horizontal', shapeChar: '─', fg: 'default', width: 10, height: 1 },
+  },
+  {
+    type: 'circle',
+    label: 'Circle',
+    group: 'shape',
+    icon: '○',
+    description: 'Draw a circle outline',
+    acceptsChildren: false,
+    defaults: { radius: 3, shapeChar: '*', fg: 'default', width: 7, height: 7 },
+  },
+  {
+    type: 'polygon',
+    label: 'Polygon',
+    group: 'shape',
+    icon: '⬡',
+    description: 'Draw a polygon with custom points',
+    acceptsChildren: false,
+    defaults: { shapeChar: '#', fg: 'default', width: 10, height: 5 },
+  },
+  // ── Data visualization ────────────────────────────────────────────────────
+  {
+    type: 'chart',
+    label: 'Chart',
+    group: 'advanced',
+    icon: '▇',
+    description: 'Bar, line, pie, or sparkline chart with mock data',
+    acceptsChildren: false,
+    defaults: {
+      chartKind: 'bar',
+      chartData: [4, 8, 6, 3, 9, 2, 7],
+      chartLabels: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      fg: 'brightCyan',
+      width: 24,
+      height: 8,
     },
   },
 ];

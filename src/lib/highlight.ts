@@ -78,13 +78,16 @@ function tokenizeLine(line: string, patterns: Pattern[]): Token[] {
   return tokens;
 }
 
-export type Lang = 'textual' | 'bubbletea' | 'ratatui' | 'json';
+export type Lang = 'textual' | 'bubbletea' | 'ratatui' | 'blessed' | 'ncurses' | 'json';
 
 export function tokenize(code: string, lang: Lang): Token[][] {
   const patterns: Pattern[] =
     lang === 'textual' ? PY_PATTERNS :
     lang === 'bubbletea' ? GO_PATTERNS :
     lang === 'ratatui' ? RS_PATTERNS :
+    // blessed uses JS syntax, ncurses uses C++ (close to RS keywords set)
+    lang === 'blessed' ? GO_PATTERNS :
+    lang === 'ncurses' ? RS_PATTERNS :
     JSON_PATTERNS;
 
   return code.split('\n').map((line) => tokenizeLine(line, patterns));

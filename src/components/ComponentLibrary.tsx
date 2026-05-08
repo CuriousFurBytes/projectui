@@ -8,6 +8,7 @@ const GROUPS: { id: ComponentDef['group']; label: string }[] = [
   { id: 'layout', label: 'Layout' },
   { id: 'basic', label: 'Basic' },
   { id: 'advanced', label: 'Advanced' },
+  { id: 'shape', label: 'Shapes' },
 ];
 
 type LibTab = 'components' | 'variants';
@@ -71,7 +72,7 @@ export function ComponentLibrary() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="overflow-auto flex-1 p-2 space-y-3">
+          <div className="overflow-y-auto flex-1 p-2 space-y-3" style={{ maxHeight: '600px' }}>
             {GROUPS.map((g) => {
               const items = COMPONENT_DEFS.filter(
                 (d) =>

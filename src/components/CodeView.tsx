@@ -4,6 +4,8 @@ import { useEditor } from '@/store/editorStore';
 import { exportTextual } from '@/exporters/textualExporter';
 import { exportBubbleTea } from '@/exporters/bubbleTeaExporter';
 import { exportRatatui } from '@/exporters/ratauiExporter';
+import { exportBlessed } from '@/exporters/blessedExporter';
+import { exportNcurses } from '@/exporters/ncursesExporter';
 import { runPython, isPyodideReady, loadPyodideRuntime } from '@/wasm/pyodideRunner';
 import { tokenize, TOKEN_COLORS, type Lang } from '@/lib/highlight';
 
@@ -11,6 +13,8 @@ const TABS: { value: Lang; label: string; ext: string }[] = [
   { value: 'textual', label: 'Python · Textual', ext: 'py' },
   { value: 'bubbletea', label: 'Go · Bubble Tea', ext: 'go' },
   { value: 'ratatui', label: 'Rust · Ratatui', ext: 'rs' },
+  { value: 'blessed', label: 'Blessed (Node.js)', ext: 'js' },
+  { value: 'ncurses', label: 'ncurses (C++)', ext: 'cpp' },
   { value: 'json', label: 'Project · JSON', ext: 'json' },
 ];
 
@@ -27,6 +31,8 @@ export function CodeView() {
     if (lang === 'textual') return exportTextual(project);
     if (lang === 'bubbletea') return exportBubbleTea(project);
     if (lang === 'ratatui') return exportRatatui(project);
+    if (lang === 'blessed') return exportBlessed(project);
+    if (lang === 'ncurses') return exportNcurses(project);
     return exportJson();
   }, [lang, project, exportJson]);
 
