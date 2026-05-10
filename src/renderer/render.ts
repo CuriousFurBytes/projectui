@@ -1141,7 +1141,7 @@ function paintNode(
             } else {
               const mid = Math.floor((a.x + b.x) / 2);
               const ch = b.y < a.y ? '/' : '\\';
-              setCell(grid, mid, Math.min(a.y, b.y) + (b.y < a.y ? 0 : 0), { ch, fg });
+              setCell(grid, mid, Math.min(a.y, b.y), { ch, fg });
             }
           }
         }

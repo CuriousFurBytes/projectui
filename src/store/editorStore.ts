@@ -540,8 +540,7 @@ export const useEditor = create<EditorState>()(
           const migrated = migrateProject(parsed);
           saveProject(migrated);
           set({ project: migrated, selectedId: null, past: [], future: [] });
-        } catch (e) {
-          console.error('Failed to import project', e);
+        } catch {
           alert('Could not import project: invalid JSON.');
         }
       },
@@ -1098,28 +1097,31 @@ export const useEditor = create<EditorState>()(
       // ── Mock dataset actions (Idea #6) ───────────────────────────────────
       addMockDataset: (name, data) => {
         const state = get();
+        const next = pushHistory(state);
         const dataset: MockDataset = { id: uid('ds'), name, data };
         const mockDatasets = [...(state.project.mockDatasets ?? []), dataset];
         const project = { ...state.project, mockDatasets };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
         return dataset.id;
       },
 
       removeMockDataset: (id) => {
         const state = get();
+        const next = pushHistory(state);
         const mockDatasets = (state.project.mockDatasets ?? []).filter((d) => d.id !== id);
         const project = { ...state.project, mockDatasets };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       updateMockDataset: (id, data) => {
         const state = get();
+        const next = pushHistory(state);
         const mockDatasets = (state.project.mockDatasets ?? []).map((d) => d.id === id ? { ...d, data } : d);
         const project = { ...state.project, mockDatasets };
         saveProject(project);
-        set({ project });
+        set({ ...next, project });
       },
 
       bindMockData: (nodeId, datasetId) => {

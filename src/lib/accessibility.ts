@@ -1,4 +1,4 @@
-import type { ProjectState } from '@/types/component';
+import type { AnsiColor, ProjectState } from '@/types/component';
 
 // ── Contrast utilities ────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ export interface ContrastIssue {
 }
 
 // ANSI color name → rough hex approximation for contrast checking
-const ANSI_HEX: Record<string, string> = {
+export const ANSI_HEX_MAP: Record<AnsiColor, string> = {
   default: '#c0caf5',
   black: '#000000',
   red: '#cc0000',
@@ -62,7 +62,7 @@ const ANSI_HEX: Record<string, string> = {
 
 function ansiToHex(color: string | undefined): string | undefined {
   if (!color) return undefined;
-  return ANSI_HEX[color];
+  return ANSI_HEX_MAP[color as AnsiColor];
 }
 
 export function checkProjectContrast(project: ProjectState): ContrastIssue[] {

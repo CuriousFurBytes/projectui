@@ -40,7 +40,7 @@ export function cloneSubtreeWithNewIds(
       ...node,
       id: newId,
       parentId,
-      children: node.children.map((c) => idMap.get(c)!).filter(Boolean),
+      children: node.children.map((c) => idMap.get(c)!).filter((id): id is string => !!id),
       props: JSON.parse(JSON.stringify(node.props)) as typeof node.props,
     };
     node.children.forEach((c) => cloneNode(c, newId));

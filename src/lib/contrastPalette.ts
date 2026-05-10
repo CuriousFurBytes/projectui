@@ -1,25 +1,7 @@
 import type { AnsiColor } from '@/types/component';
-import { contrastRatio, isContrastSafe } from '@/lib/accessibility';
+import { contrastRatio, isContrastSafe, ANSI_HEX_MAP } from '@/lib/accessibility';
 
-export const ANSI_HEX_MAP: Record<AnsiColor, string> = {
-  default: '#c0caf5',
-  black: '#000000',
-  red: '#cc0000',
-  green: '#00aa00',
-  yellow: '#aaaa00',
-  blue: '#0000cc',
-  magenta: '#aa00aa',
-  cyan: '#00aaaa',
-  white: '#aaaaaa',
-  brightBlack: '#555555',
-  brightRed: '#ff5555',
-  brightGreen: '#55ff55',
-  brightYellow: '#ffff55',
-  brightBlue: '#5555ff',
-  brightMagenta: '#ff55ff',
-  brightCyan: '#55ffff',
-  brightWhite: '#ffffff',
-};
+export { ANSI_HEX_MAP };
 
 const ALL_COLORS = Object.keys(ANSI_HEX_MAP) as AnsiColor[];
 

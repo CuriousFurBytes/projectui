@@ -68,7 +68,7 @@ export function asciiMotionToProject(file: AsciiMotionFile, name?: string): Proj
       type: 'asciitext',
       parentId: rootId,
       children: [],
-      props: { markdownContent: frame.lines.join('\n') },
+      props: { text: frame.lines.join('\n') },
     };
     const nodes: Record<string, ComponentNode> = { [rootId]: root, [textId]: textNode };
     if (i === 0) {
