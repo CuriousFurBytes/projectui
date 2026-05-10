@@ -55,26 +55,26 @@ export const EXPORTER_CAPABILITIES: Record<string, ExporterCapability> = {
   textual: {
     supported: ['container', 'text', 'button', 'input', 'checkbox', 'select', 'list', 'textarea', 'table', 'tabs', 'statusbar', 'progressbar', 'modal', 'spinner'],
     partial: ['divider', 'toast', 'grid', 'viewport'],
-    unsupported: ['timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+    unsupported: ['timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext', 'line', 'circle', 'polygon', 'chart'],
   },
   bubbletea: {
     supported: ['container', 'text', 'button', 'input', 'list', 'progressbar', 'spinner', 'statusbar'],
     partial: ['checkbox', 'select', 'textarea', 'table', 'tabs', 'divider'],
-    unsupported: ['modal', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+    unsupported: ['modal', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext', 'line', 'circle', 'polygon', 'chart'],
   },
   ratatui: {
     supported: ['container', 'text', 'list', 'table', 'progressbar', 'statusbar', 'tabs', 'divider'],
-    partial: ['button', 'input', 'checkbox', 'select', 'spinner'],
-    unsupported: ['modal', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+    partial: ['button', 'input', 'checkbox', 'select', 'spinner', 'textarea'],
+    unsupported: ['modal', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext', 'line', 'circle', 'polygon', 'chart'],
   },
   blessed: {
     supported: ['container', 'text', 'button', 'input', 'list', 'progressbar', 'table', 'tabs', 'modal'],
     partial: ['statusbar', 'checkbox', 'select', 'textarea', 'divider'],
-    unsupported: ['spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+    unsupported: ['spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext', 'line', 'circle', 'polygon', 'chart'],
   },
   ncurses: {
     supported: ['container', 'text', 'button', 'input', 'list', 'progressbar', 'table', 'tabs'],
     partial: ['modal', 'statusbar', 'checkbox', 'divider'],
-    unsupported: ['select', 'textarea', 'spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext'],
+    unsupported: ['select', 'textarea', 'spinner', 'toast', 'grid', 'viewport', 'timer', 'filepicker', 'asciitext', 'treeview', 'metriccard', 'markdowntext', 'line', 'circle', 'polygon', 'chart'],
   },
 };

@@ -1,5 +1,13 @@
 import type { ProjectState } from '@/types/component';
 
+function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
+function escapeLabel(s: string): string {
+  return s.replace(/"/g, '&quot;');
+}
+
 export function exportTimelineMermaid(project: ProjectState): string {
   const steps = project.timelineSteps ?? [];
   const transitions = project.timelineTransitions ?? [];
@@ -8,12 +16,12 @@ export function exportTimelineMermaid(project: ProjectState): string {
 
   for (const step of steps) {
     const label = step.label ?? step.id;
-    lines.push(`  ${step.id}["${label}"]`);
+    lines.push(`  ${sanitizeId(step.id)}["${escapeLabel(label)}"]`);
   }
 
   for (const trans of transitions) {
     const label = trans.label ?? (trans.trigger ? `${trans.event}: ${trans.trigger}` : trans.event);
-    lines.push(`  ${trans.fromStepId} -->|"${label}"| ${trans.toStepId}`);
+    lines.push(`  ${sanitizeId(trans.fromStepId)} -->|"${escapeLabel(label)}"| ${sanitizeId(trans.toStepId)}`);
   }
 
   return lines.join('\n');

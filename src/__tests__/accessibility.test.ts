@@ -6,6 +6,7 @@ import {
   isSafeGlyph,
   checkProjectGlyphs,
   CAPABILITY_PROFILES,
+  hexToRgb,
 } from '../lib/accessibility';
 import type { ProjectState, ComponentNode } from '../types/component';
 
@@ -31,6 +32,42 @@ function makeProject(nodes: Record<string, ComponentNode>): ProjectState {
     theme: 'dracula',
   };
 }
+
+// ── hexToRgb ──────────────────────────────────────────────────────────────────
+
+describe('hexToRgb', () => {
+  it('parses a 6-digit hex with #', () => {
+    expect(hexToRgb('#ff8000')).toEqual({ r: 255, g: 128, b: 0 });
+  });
+
+  it('parses a 6-digit hex without #', () => {
+    expect(hexToRgb('00ff00')).toEqual({ r: 0, g: 255, b: 0 });
+  });
+
+  it('parses a 3-digit hex (expands shorthand)', () => {
+    expect(hexToRgb('#f0a')).toEqual({ r: 255, g: 0, b: 170 });
+  });
+
+  it('returns {0,0,0} for "notahex"', () => {
+    const rgb = hexToRgb('notahex');
+    expect(rgb).toEqual({ r: 0, g: 0, b: 0 });
+    expect(Number.isNaN(rgb.r)).toBe(false);
+    expect(Number.isNaN(rgb.g)).toBe(false);
+    expect(Number.isNaN(rgb.b)).toBe(false);
+  });
+
+  it('returns {0,0,0} for "#zzzzzz"', () => {
+    const rgb = hexToRgb('#zzzzzz');
+    expect(rgb).toEqual({ r: 0, g: 0, b: 0 });
+    expect(Number.isNaN(rgb.r)).toBe(false);
+  });
+
+  it('returns {0,0,0} for empty string', () => {
+    const rgb = hexToRgb('');
+    expect(rgb).toEqual({ r: 0, g: 0, b: 0 });
+    expect(Number.isNaN(rgb.r)).toBe(false);
+  });
+});
 
 // ── contrastRatio ─────────────────────────────────────────────────────────────
 

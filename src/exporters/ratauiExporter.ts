@@ -38,10 +38,13 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
         return `${pad}Block::bordered()\n${pad}    .border_type(${borderStyle(p.border)})`;
       }
       const childStr = children.join(',\n') + ',';
+      const layout = `${pad}${direction}::new([\n${childStr}\n${pad}])`;
       if (p.border && p.border !== 'none') {
-        return `${pad}Block::bordered()\n${pad}    .border_type(${borderStyle(p.border)})\n${pad}    .title(${rustStr(p.title ?? '')})`;
+        const block = `${pad}Block::bordered()\n${pad}    .border_type(${borderStyle(p.border)})\n${pad}    .title(${rustStr(p.title ?? '')})`;
+        // Render the bordered Block, then the children layout below it.
+        return `${block},\n${pad}// children:\n${layout}`;
       }
-      return `${pad}${direction}::new([\n${childStr}\n${pad}])`;
+      return layout;
     }
     case 'text':
       return `${pad}Paragraph::new(${rustStr(p.text ?? '')})`;
@@ -94,7 +97,6 @@ function renderWidget(node: ComponentNode, components: Record<string, ComponentN
       return `${pad}Paragraph::new(${rustStr(`${p.metricLabel ?? 'Metric'}: ${p.metricValue ?? '—'}${p.metricDelta ? ` (${p.metricDelta})` : ''}`)})\n${pad}    .block(Block::bordered())`;
     case 'markdowntext':
       return `${pad}Paragraph::new(${rustStr(p.markdownContent ?? '')})\n${pad}    .wrap(Wrap { trim: false })`;
-    case 'modal':
     case 'grid':
     case 'viewport': {
       const children = node.children

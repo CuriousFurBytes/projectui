@@ -355,7 +355,7 @@ export const useEditor = create<EditorState>()(
       keyboardShortcuts: loadShortcuts(),
 
       undoLabel: () => get().past.at(-1)?.label,
-      redoLabel: () => get().future.at(0)?.label,
+      redoLabel: () => get().future.at(-1)?.label,
 
       setPreference: (key, value) => {
         const prefs = { ...get().preferences, [key]: value };

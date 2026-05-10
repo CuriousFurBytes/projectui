@@ -47,8 +47,6 @@ function emitNode(
 ): void {
   const p = node.props;
   const varName = nodeId(node);
-  const top = sizeVal(p.y ?? p.height, '0');
-  const left = sizeVal(p.x ?? p.width, '0');
   const width = sizeVal(p.width, '100%');
   const height = sizeVal(p.height, '100%');
   const fg = ansiToBlessed(p.fg);
@@ -196,8 +194,6 @@ function emitNode(
     }
   }
 
-  void top;
-  void left;
 }
 
 export function exportBlessed(project: ProjectState): string {

@@ -26,6 +26,7 @@ import { QuickActionsToolbar } from './components/QuickActionsToolbar';
 import { GridRulerOverlay } from './components/GridRulerOverlay';
 import { MotionAccessibilityToggle } from './components/MotionAccessibilityToggle';
 import { useEditor } from './store/editorStore';
+import { saveAutosave } from '@/lib/autosave';
 import clsx from 'clsx';
 
 interface RightClickState {
@@ -70,6 +71,15 @@ export default function App() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  const autoSaveIntervalMs = preferences.autoSaveIntervalMs;
+  useEffect(() => {
+    if (!autoSaveIntervalMs || autoSaveIntervalMs <= 0) return;
+    const id = setInterval(() => {
+      saveAutosave(useEditor.getState().project);
+    }, autoSaveIntervalMs);
+    return () => clearInterval(id);
+  }, [autoSaveIntervalMs]);
 
   const handleCanvasRightClick = (e: React.MouseEvent) => {
     // Only activate right-click menu if clicking on a node
@@ -137,6 +147,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Known limitations"
+          aria-label="Known limitations"
           onClick={() => setShowKnownLimitations(true)}
         >
           ! Limitations
@@ -144,6 +155,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Visual diff"
+          aria-label="Visual diff"
           onClick={() => setShowVisualDiff(true)}
         >
           ≠ Diff
@@ -151,6 +163,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Play mode"
+          aria-label="Play mode"
           onClick={() => setShowPlayMode(true)}
         >
           ▶ Play
@@ -158,6 +171,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Import ASCII Motion"
+          aria-label="Import ASCII Motion"
           onClick={() => setShowAsciiMotionImport(true)}
         >
           ↓ ASCII Motion
@@ -168,6 +182,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Demo gallery"
+          aria-label="Demo gallery"
           onClick={() => setShowDemoGallery(true)}
         >
           🖼 Gallery
@@ -175,6 +190,7 @@ export default function App() {
         <button
           className="btn text-xs px-1.5 py-0.5 shrink-0"
           title="Export as PNG / SVG"
+          aria-label="Export as PNG / SVG"
           onClick={() => setShowPNGExport(true)}
         >
           📷 Export Image

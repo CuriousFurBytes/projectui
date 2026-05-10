@@ -69,7 +69,17 @@ export async function encodeProject(project: ProjectState): Promise<string> {
 export async function decodeProject(encoded: string): Promise<ProjectState> {
   const bytes = fromBase64Url(encoded) as Uint8Array<ArrayBuffer>;
   const json = await decompress(bytes);
-  return JSON.parse(json) as ProjectState;
+  const parsed: unknown = JSON.parse(json);
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    typeof (parsed as { rootId?: unknown }).rootId !== 'string' ||
+    typeof (parsed as { components?: unknown }).components !== 'object' ||
+    (parsed as { components?: unknown }).components === null
+  ) {
+    throw new Error('Invalid project data in share URL');
+  }
+  return parsed as ProjectState;
 }
 
 export function buildShareUrl(encoded: string): string {

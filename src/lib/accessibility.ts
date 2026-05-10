@@ -2,12 +2,20 @@ import type { AnsiColor, ProjectState } from '@/types/component';
 
 // ── Contrast utilities ────────────────────────────────────────────────────────
 
-function hexToRgb(hex: string): [number, number, number] {
-  const clean = hex.replace('#', '');
+const HEX_RE = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  if (typeof hex !== 'string' || !HEX_RE.test(hex)) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  let clean = hex.replace('#', '');
+  if (clean.length === 3) {
+    clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+  }
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
-  return [r, g, b];
+  return { r, g, b };
 }
 
 function linearize(c: number): number {
@@ -16,7 +24,7 @@ function linearize(c: number): number {
 }
 
 function relativeLuminance(hex: string): number {
-  const [r, g, b] = hexToRgb(hex);
+  const { r, g, b } = hexToRgb(hex);
   return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
 }
 

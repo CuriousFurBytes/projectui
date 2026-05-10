@@ -131,6 +131,14 @@ describe('editorStore – timeline migration and history', () => {
     expect(useEditor.getState().project.timelineSteps?.map((step) => step.label)).toContain('Extra Step');
   });
 
+  it('redoLabel returns the label of the most recently undone action', () => {
+    const rootId = useEditor.getState().project.rootId;
+    useEditor.getState().addChild(rootId, 'button');
+    expect(useEditor.getState().undoLabel()).toBe('Add button');
+    useEditor.getState().undo();
+    expect(useEditor.getState().redoLabel()).toBe('Add button');
+  });
+
   it('renames default timeline labels with their layer but preserves custom step labels', () => {
     useEditor.getState().addLayer();
 
