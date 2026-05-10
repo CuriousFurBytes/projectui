@@ -83,6 +83,7 @@ export function TopBar({
         <span className="text-accent font-bold">&gt;_</span>
         <span className="text-sm font-semibold">ProjecTUI</span>
         <span className="text-[10px] text-ink-300 ml-1">v0.1</span>
+        <span className="alpha-badge text-[9px] font-bold tracking-wide ml-1 px-1 py-0 rounded border" style={{color:'#ff9e64',borderColor:'rgba(255,158,100,0.4)',background:'rgba(255,158,100,0.1)'}}>ALPHA</span>
       </div>
 
       <div className="h-5 w-px bg-ink-600 mx-1 shrink-0" />
@@ -148,6 +149,9 @@ export function TopBar({
       </button>
 
       <div className="ml-auto flex items-center gap-1 shrink-0">
+        {/* Docs link */}
+        <a href="docs/" className="btn shrink-0 text-xs" title="Documentation" aria-label="Documentation">Docs</a>
+
         {/* A-C: Command palette */}
         <button className="btn" onClick={onOpenCommandPalette} title="Command palette (⌘K)">⌘K</button>
 

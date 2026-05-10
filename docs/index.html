@@ -169,11 +169,8 @@
       background: var(--bg2);
     }
 
-    .sidebar nav a.active {
-      color: var(--blue);
-      border-left-color: var(--blue);
-      background: var(--bg2);
-    }
+    /* scroll-margin so anchor links don't hide behind sticky header */
+    section[id] { scroll-margin-top: 1.5rem; }
 
     /* ── Main content ──────────────────────────────────────────── */
     .content {
@@ -495,34 +492,6 @@
     }
 
     /* ── Export tabs ───────────────────────────────────────────── */
-    .tab-group { margin: 1.5rem 0; }
-
-    .tab-bar {
-      display: flex;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 0;
-    }
-
-    .tab-btn {
-      padding: 0.45rem 1rem;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--fg-muted);
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
-      margin-bottom: -1px;
-    }
-
-    .tab-btn:hover { color: var(--fg); }
-    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
-
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
     /* ── Footer ────────────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--border);
@@ -540,6 +509,20 @@
 
     footer a { color: var(--fg-muted); }
     footer a:hover { color: var(--blue); }
+
+    .alpha-badge {
+      display: inline-block;
+      background: color-mix(in srgb, var(--orange) 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--orange) 40%, transparent);
+      border-radius: 4px;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--orange);
+      vertical-align: middle;
+      font-family: var(--mono);
+    }
 
     .ai-badge {
       display: inline-flex;
@@ -577,7 +560,8 @@
     <nav>
       <ul>
         <li class="section-label">Introduction</li>
-        <li><a href="#overview">Overview</a></li>
+        <li><a href="#overview">Overview <span class="alpha-badge" style="font-size:9px">ALPHA</span></a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
         <li><a href="#getting-started">Getting Started</a></li>
         <li><a href="#ai-disclaimer">AI Disclaimer</a></li>
 
@@ -616,7 +600,7 @@
 
       <!-- Hero -->
       <div class="hero" id="overview">
-        <div class="hero-badge">▶ v0.x · MIT License · Browser-only</div>
+        <div class="hero-badge">▶ v0.x · MIT License · Browser-only · <span class="alpha-badge">ALPHA</span></div>
         <h1>Projec<span>TUI</span></h1>
         <p class="hero-sub">
           A web-based visual editor for <strong style="color:var(--fg)">terminal user interfaces</strong>.
@@ -674,6 +658,61 @@
             <h4>Live Python validation</h4>
             <p>Optional WASM runtime (Pyodide) validates generated Python code in-browser.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- Screenshots -->
+      <section id="screenshots">
+        <div class="section-header">
+          <div class="section-id">§ screenshots</div>
+          <h2>Screenshots</h2>
+        </div>
+        <p>All screenshots are captured automatically by the Playwright E2E test suite on each run.</p>
+
+        <h3>Full application</h3>
+        <figure style="margin:1.5rem 0">
+          <img src="../e2e/screenshots/zz-full-app.png" alt="ProjecTUI — full app view showing canvas, layers panel and properties" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+          <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.5rem">Full editor — canvas (center), component library (left), properties panel (right).</figcaption>
+        </figure>
+
+        <h3>Components on canvas</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin:1.5rem 0">
+          <figure>
+            <img src="../e2e/screenshots/01-app-loaded.png" alt="App on first load" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">App on first load with default layout.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-02-spinner-on-canvas.png" alt="Spinner component on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Spinner widget placed on canvas.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-03-toast-on-canvas.png" alt="Toast notification on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Toast notification widget.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-04-asciitext-on-canvas.png" alt="ASCII text banner on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Large ASCII art banner (figlet-style).</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f5-01-border-props.png" alt="Border properties panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Border style and color options.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f10-01-timeline-visible.png" alt="Timeline panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Timeline panel for multi-screen flows.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/06-layers-panel.png" alt="Layers panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Layers panel showing component tree.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f3-01-rich-spans.png" alt="Rich spans on status bar" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Rich spans: per-word colors on a status bar.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f9-01-grid-in-library.png" alt="Grid component in library" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Grid layout component.</figcaption>
+          </figure>
         </div>
       </section>
 
@@ -737,9 +776,9 @@ npm run test:e2e     <span class="cmt"># Playwright E2E tests</span></code></pre
         <div class="callout warning">
           <span class="callout-icon">⚠️</span>
           <div>
-            <p><strong>This project was developed with heavy use of large language models and AI coding agents.</strong></p>
-            <p style="margin-top:0.5rem">Claude (Anthropic) and similar LLM-based tools assisted throughout the development process: architecture design, feature implementation, code generation, test writing (red/green TDD cycles), refactoring, and documentation. The iterative agent-driven workflow accelerated development significantly.</p>
-            <p style="margin-top:0.5rem">All AI-generated code was reviewed, tested, and integrated by the author. Automated test suites (Vitest unit tests + Playwright E2E) validate correctness. Readers and contributors should be aware of this AI-assisted development context when evaluating the codebase.</p>
+            <p><strong>Created with AI, reviewed by a human.</strong></p>
+            <p style="margin-top:0.5rem">Claude (Anthropic) assisted throughout development: architecture, feature implementation, code generation, red/green TDD cycles, refactoring, and documentation. The iterative agent-driven workflow accelerated delivery significantly.</p>
+            <p style="margin-top:0.5rem">All AI-generated code was reviewed, tested, and integrated by the author. Vitest unit tests and Playwright E2E tests validate correctness. Readers and contributors should be aware of this AI-assisted context when evaluating the codebase.</p>
           </div>
         </div>
       </section>
@@ -1535,36 +1574,6 @@ cargo run</code></pre>
 
 </div><!-- /.layout -->
 
-<script>
-  // Active nav link tracking
-  const sections = document.querySelectorAll('section[id], div[id]');
-  const navLinks = document.querySelectorAll('.sidebar nav a');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        navLinks.forEach(link => {
-          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
-        });
-      }
-    });
-  }, { rootMargin: '-20% 0px -70% 0px' });
-
-  sections.forEach(section => observer.observe(section));
-
-  // Tab switching
-  document.querySelectorAll('.tab-bar').forEach(bar => {
-    bar.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const group = btn.closest('.tab-group');
-        group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        group.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        group.querySelector('#' + btn.dataset.tab)?.classList.add('active');
-      });
-    });
-  });
-</script>
 
 </body>
 </html>
