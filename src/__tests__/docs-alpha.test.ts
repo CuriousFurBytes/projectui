@@ -1,88 +1,86 @@
-// TDD tests for the documentation static site.
-// These tests read the HTML file directly and assert structural requirements.
+// TDD tests for the documentation site content.
+// Reads docs-src markdown source files directly (VitePress multi-page site).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-const docsHtml = readFileSync(resolve(__dirname, '../../docs/index.html'), 'utf-8');
+const root = resolve(__dirname, '../..');
+const indexMd = readFileSync(resolve(root, 'docs-src/index.md'), 'utf-8');
+const screenshotsMd = readFileSync(resolve(root, 'docs-src/introduction/screenshots.md'), 'utf-8');
+const inspirationMd = readFileSync(resolve(root, 'docs-src/reference/inspiration.md'), 'utf-8');
+const librariesMd = readFileSync(resolve(root, 'docs-src/reference/libraries.md'), 'utf-8');
+const aiDisclaimerMd = readFileSync(resolve(root, 'docs-src/introduction/ai-disclaimer.md'), 'utf-8');
 
-describe('docs/index.html – no client-side JavaScript', () => {
-  it('contains no <script> tags', () => {
-    expect(docsHtml).not.toMatch(/<script[\s>]/i);
-  });
-});
-
-describe('docs/index.html – alpha tag', () => {
+describe('docs – alpha tag', () => {
   it('contains an "alpha" badge visible in the page', () => {
-    expect(docsHtml.toLowerCase()).toContain('alpha');
+    expect(indexMd.toLowerCase()).toContain('alpha');
   });
 
   it('includes alpha in the hero badge or title area', () => {
-    // The hero-badge or h1 area must contain ALPHA so users know it's early-stage
-    const heroBadgeMatch = docsHtml.match(/hero-badge[^>]*>[^<]*alpha/i)
-      || docsHtml.match(/alpha[^<]*<\/span>/i)
-      || docsHtml.match(/class="[^"]*alpha[^"]*"/i);
+    const heroBadgeMatch = indexMd.match(/hero-badge[^>]*>[^<]*alpha/i)
+      || indexMd.match(/alpha[^<]*<\/span>/i)
+      || indexMd.match(/class="[^"]*alpha[^"]*"/i);
     expect(heroBadgeMatch).not.toBeNull();
   });
 });
 
-describe('docs/index.html – screenshots', () => {
+describe('docs – screenshots', () => {
   it('references at least 4 screenshot images', () => {
-    const imgMatches = docsHtml.match(/<img[^>]+screenshots[^>]+>/gi) ?? [];
+    const imgMatches = screenshotsMd.match(/!\[.*?\]\(.*?screenshots.*?\)/gi) ?? [];
     expect(imgMatches.length).toBeGreaterThanOrEqual(4);
   });
 
   it('has a screenshots section heading', () => {
-    expect(docsHtml.toLowerCase()).toContain('screenshot');
+    expect(screenshotsMd.toLowerCase()).toContain('screenshot');
   });
 
   it('full-app screenshot is referenced', () => {
-    expect(docsHtml).toContain('zz-full-app.png');
+    expect(screenshotsMd).toContain('zz-full-app.png');
   });
 });
 
-describe('docs/index.html – inspiration links', () => {
+describe('docs – inspiration links', () => {
   it('links to ascii-motion.app', () => {
-    expect(docsHtml).toContain('ascii-motion');
+    expect(inspirationMd).toContain('ascii-motion');
   });
 
   it('links to tui.builders', () => {
-    expect(docsHtml).toContain('tui.builders');
+    expect(inspirationMd).toContain('tui.builders');
   });
 });
 
-describe('docs/index.html – library links', () => {
+describe('docs – library links', () => {
   it('links to Bubble Tea', () => {
-    expect(docsHtml).toMatch(/bubbletea|bubble-tea|Bubble Tea/i);
+    expect(librariesMd).toMatch(/bubbletea|bubble-tea|Bubble Tea/i);
   });
 
   it('links to Lip Gloss', () => {
-    expect(docsHtml).toMatch(/lipgloss|lip-gloss|Lip Gloss/i);
+    expect(librariesMd).toMatch(/lipgloss|lip-gloss|Lip Gloss/i);
   });
 
   it('links to Textual', () => {
-    expect(docsHtml).toContain('Textual');
+    expect(librariesMd).toContain('Textual');
   });
 
   it('links to Ratatui', () => {
-    expect(docsHtml).toContain('Ratatui');
+    expect(librariesMd).toContain('Ratatui');
   });
 
   it('links to Ink (Node.js TUI)', () => {
-    expect(docsHtml).toMatch(/vadimdemedes\/ink|Ink.*Node/i);
+    expect(librariesMd).toMatch(/vadimdemedes\/ink|Ink.*Node/i);
   });
 });
 
-describe('docs/index.html – AI disclaimer', () => {
+describe('docs – AI disclaimer', () => {
   it('contains AI disclaimer text', () => {
-    expect(docsHtml.toLowerCase()).toContain('ai');
+    expect(aiDisclaimerMd.toLowerCase()).toContain('ai');
   });
 
   it('says "reviewed by a human"', () => {
-    expect(docsHtml.toLowerCase()).toContain('reviewed by a human');
+    expect(aiDisclaimerMd.toLowerCase()).toContain('reviewed by a human');
   });
 
-  it('has an AI badge in the footer', () => {
-    expect(docsHtml).toContain('ai-badge');
+  it('has an AI warning block', () => {
+    expect(aiDisclaimerMd).toMatch(/ai-badge|::: warning/i);
   });
 });
