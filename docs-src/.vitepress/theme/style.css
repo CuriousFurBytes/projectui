@@ -1,0 +1,38 @@
+/* Tokyo Night-inspired accent colours */
+:root {
+  --vp-c-brand-1: #7aa2f7;
+  --vp-c-brand-2: #5a82e6;
+  --vp-c-brand-3: #3d5fbf;
+  --vp-c-brand-soft: rgba(122, 162, 247, 0.14);
+
+  --vp-font-family-base: 'Inter', system-ui, sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.dark {
+  --vp-c-bg: #1a1b26;
+  --vp-c-bg-soft: #24283b;
+  --vp-c-bg-mute: #1f2335;
+  --vp-c-border: #3b4261;
+  --vp-c-divider: #3b4261;
+  --vp-c-text-1: #c0caf5;
+  --vp-c-text-2: #a9b1d6;
+  --vp-c-text-3: #565f89;
+  --vp-c-bg-nav: #16161e;
+  --vp-nav-bg-color: #16161e;
+  --vp-sidebar-bg-color: #16161e;
+  --vp-code-bg: #24283b;
+  --vp-code-block-bg: #16161e;
+  --vp-code-color: #7dcfff;
+}
+
+/* Make sidebar nav feel tighter */
+.VPSidebarItem .text {
+  font-size: 13.5px;
+}
+
+/* Style the site title */
+.VPNav .title {
+  font-family: var(--vp-font-family-mono);
+  font-weight: 700;
+}
