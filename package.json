@@ -6,7 +6,7 @@
   "description": "ProjecTUI — visually design terminal UIs in the browser and export runnable code for Textual (Python), Bubble Tea (Go), or Ratatui (Rust).",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && cp -r docs dist/docs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",

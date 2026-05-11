@@ -27,6 +27,7 @@ import { GridRulerOverlay } from './components/GridRulerOverlay';
 import { MotionAccessibilityToggle } from './components/MotionAccessibilityToggle';
 import { useEditor } from './store/editorStore';
 import { saveAutosave } from '@/lib/autosave';
+import { MobileBlock, isMobile } from './components/MobileBlock';
 import clsx from 'clsx';
 
 interface RightClickState {
@@ -36,6 +37,7 @@ interface RightClickState {
 }
 
 export default function App() {
+  const isMobileDevice = isMobile();
   const [view, setView] = useState<AppView>('preview');
   const [zoom, setZoom] = useState(1);
   const [animPaused, setAnimPaused] = useState(false);
@@ -93,6 +95,8 @@ export default function App() {
   };
 
   const showGridOrRulers = preferences.showGrid || preferences.showRulers;
+
+  if (isMobileDevice) return <MobileBlock />;
 
   return (
     <div className="h-full flex flex-col">
