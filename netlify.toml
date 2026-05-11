@@ -6,6 +6,19 @@
   NODE_VERSION = "20"
   VITE_BASE = "/"
 
+# Serve /docs and /docs/* from the static docs folder – must come before the SPA catch-all.
+# Without this, Netlify's 200-rewrite below swallows /docs/ and serves the React app.
+[[redirects]]
+  from = "/docs"
+  to = "/docs/"
+  status = 301
+
+[[redirects]]
+  from = "/docs/*"
+  to = "/docs/:splat"
+  status = 200
+  force = false
+
 # SPA fallback (single index.html)
 [[redirects]]
   from = "/*"

@@ -150,7 +150,7 @@ export function TopBar({
 
       <div className="ml-auto flex items-center gap-1 shrink-0">
         {/* Docs link */}
-        <a href="docs/" className="btn shrink-0 text-xs" title="Documentation" aria-label="Documentation">Docs</a>
+        <a href="/docs/" className="btn shrink-0 text-xs" title="Documentation" aria-label="Documentation">Docs</a>
 
         {/* A-C: Command palette */}
         <button className="btn" onClick={onOpenCommandPalette} title="Command palette (⌘K)">⌘K</button>
