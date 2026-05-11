@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProjecTUI — Documentation</title>
+  <meta name="description" content="ProjecTUI: a web-based visual editor for terminal user interfaces. Export to Python (Textual), Go (Bubble Tea), and Rust (Ratatui)." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1a1b26;
+      --bg1:       #16161e;
+      --bg2:       #1f2335;
+      --bg3:       #24283b;
+      --bg4:       #292e42;
+      --border:    #3b4261;
+      --fg:        #c0caf5;
+      --fg-dim:    #a9b1d6;
+      --fg-muted:  #565f89;
+      --blue:      #7aa2f7;
+      --blue-dim:  #3d59a1;
+      --cyan:      #7dcfff;
+      --green:     #9ece6a;
+      --yellow:    #e0af68;
+      --orange:    #ff9e64;
+      --red:       #f7768e;
+      --purple:    #bb9af7;
+      --pink:      #ff007c;
+      --mono:      'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --sans:      'Inter', system-ui, sans-serif;
+      --radius:    6px;
+      --sidebar-w: 260px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; color: var(--cyan); }
+
+    h1, h2, h3, h4 { font-family: var(--mono); line-height: 1.3; }
+
+    code, pre {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    code {
+      background: var(--bg3);
+      color: var(--cyan);
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      line-height: 1.6;
+      tab-size: 4;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--fg);
+    }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg1);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.5rem 0;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .sidebar-logo .term-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 16px;
+      color: var(--blue);
+    }
+
+    .sidebar-logo .logo-name {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--fg);
+    }
+
+    .sidebar-logo .logo-sub {
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+    }
+
+    .sidebar nav > ul > li {
+      margin-bottom: 0.1rem;
+    }
+
+    .sidebar nav .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--fg-muted);
+      padding: 0.75rem 1.25rem 0.25rem;
+      font-family: var(--mono);
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 0.3rem 1.25rem 0.3rem 1.5rem;
+      color: var(--fg-dim);
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .sidebar nav a:hover {
+      color: var(--fg);
+      text-decoration: none;
+      background: var(--bg2);
+    }
+
+    /* scroll-margin so anchor links don't hide behind sticky header */
+    section[id] { scroll-margin-top: 1.5rem; }
+
+    /* ── Main content ──────────────────────────────────────────── */
+    .content {
+      flex: 1;
+      min-width: 0;
+      padding: 3rem 4rem;
+      max-width: 900px;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content { padding: 2rem 1.5rem; }
+    }
+
+    section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 2rem;
+    }
+
+    .section-anchor {
+      display: block;
+      height: 0;
+      visibility: hidden;
+    }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      margin-bottom: 4rem;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      color: var(--fg);
+      margin-bottom: 1rem;
+      line-height: 1.1;
+    }
+
+    .hero h1 span { color: var(--blue); }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--fg-dim);
+      max-width: 560px;
+      margin-bottom: 2rem;
+      line-height: 1.65;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.2rem;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      text-decoration: none !important;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    .btn-primary {
+      background: var(--blue);
+      color: var(--bg);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg-dim);
+    }
+
+    /* ── Terminal demo block ───────────────────────────────────── */
+    .term-block {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+
+    .term-block-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .term-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .term-dot.red    { background: #f7768e; }
+    .term-dot.yellow { background: #e0af68; }
+    .term-dot.green  { background: #9ece6a; }
+
+    .term-block-bar .term-title {
+      margin-left: auto;
+      margin-right: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--fg-muted);
+      transform: translateX(-18px);
+    }
+
+    .term-block pre {
+      border: none;
+      border-radius: 0;
+      margin: 0;
+      padding: 1rem 1.25rem;
+    }
+
+    /* ── Syntax colors ─────────────────────────────────────────── */
+    .kw   { color: var(--purple); }
+    .fn   { color: var(--blue); }
+    .str  { color: var(--green); }
+    .num  { color: var(--orange); }
+    .cmt  { color: var(--fg-muted); font-style: italic; }
+    .cls  { color: var(--yellow); }
+    .type { color: var(--cyan); }
+    .dec  { color: var(--red); }
+
+    /* ── Section headings ──────────────────────────────────────── */
+    .section-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--fg);
+    }
+
+    .section-header .section-id {
+      font-size: 11px;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    p { margin-bottom: 1rem; color: var(--fg-dim); }
+
+    ul, ol { margin: 0.5rem 0 1rem 1.5rem; color: var(--fg-dim); }
+    li { margin-bottom: 0.35rem; }
+    li code { font-size: 12px; }
+
+    /* ── Tables ────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: var(--bg3);
+      color: var(--fg);
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.6rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--fg-dim);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg2); }
+
+    td:first-child code { color: var(--yellow); }
+
+    /* ── Callouts ──────────────────────────────────────────────── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-left: 3px solid;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    .callout.info    { background: color-mix(in srgb, var(--blue) 8%, transparent); border-color: var(--blue); }
+    .callout.warning { background: color-mix(in srgb, var(--yellow) 8%, transparent); border-color: var(--yellow); }
+    .callout.danger  { background: color-mix(in srgb, var(--red) 8%, transparent); border-color: var(--red); }
+    .callout.success { background: color-mix(in srgb, var(--green) 8%, transparent); border-color: var(--green); }
+
+    .callout p { margin: 0; font-size: 14px; }
+    .callout strong { color: var(--fg); }
+
+    /* ── Keyboard shortcut ─────────────────────────────────────── */
+    kbd {
+      display: inline-block;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--fg);
+      line-height: 1.6;
+    }
+
+    /* ── Step list ─────────────────────────────────────────────── */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .steps li {
+      counter-increment: step;
+      padding: 0.9rem 0 0.9rem 3rem;
+      position: relative;
+      border-left: 1px solid var(--border);
+      margin-left: 1rem;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: -1.05rem;
+      top: 0.85rem;
+      width: 22px;
+      height: 22px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .steps li:last-child {
+      border-left: 1px solid transparent;
+    }
+
+    /* ── Feature grid ──────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+
+    .feature-card .fc-icon {
+      font-size: 20px;
+      margin-bottom: 0.4rem;
+    }
+
+    .feature-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 0.35rem;
+      font-family: var(--mono);
+    }
+
+    .feature-card p {
+      font-size: 12.5px;
+      color: var(--fg-muted);
+      margin: 0;
+    }
+
+    /* ── Export tabs ───────────────────────────────────────────── */
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      padding: 2rem 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 13px;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+    }
+
+    footer a { color: var(--fg-muted); }
+    footer a:hover { color: var(--blue); }
+
+    .alpha-badge {
+      display: inline-block;
+      background: color-mix(in srgb, var(--orange) 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--orange) 40%, transparent);
+      border-radius: 4px;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--orange);
+      vertical-align: middle;
+      font-family: var(--mono);
+    }
+
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: color-mix(in srgb, var(--purple) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--purple) 30%, transparent);
+      border-radius: 100px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: var(--purple);
+      font-family: var(--mono);
+    }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2rem; }
+      footer { padding: 1.5rem; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="term-icon">▶</div>
+      <div>
+        <div class="logo-name">ProjecTUI</div>
+        <div class="logo-sub">Documentation</div>
+      </div>
+    </div>
+    <nav>
+      <ul>
+        <li class="section-label">Introduction</li>
+        <li><a href="#overview">Overview <span class="alpha-badge" style="font-size:9px">ALPHA</span></a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#getting-started">Getting Started</a></li>
+        <li><a href="#ai-disclaimer">AI Disclaimer</a></li>
+
+        <li class="section-label">Usage</li>
+        <li><a href="#canvas">The Canvas</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#properties">Properties Panel</a></li>
+        <li><a href="#layers">Layers & Screens</a></li>
+        <li><a href="#timeline">Timeline</a></li>
+        <li><a href="#exporting">Exporting Code</a></li>
+        <li><a href="#sharing">Sharing Projects</a></li>
+        <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
+
+        <li class="section-label">Export Targets</li>
+        <li><a href="#export-python">Python · Textual</a></li>
+        <li><a href="#export-go">Go · Bubble Tea</a></li>
+        <li><a href="#export-rust">Rust · Ratatui</a></li>
+
+        <li class="section-label">Reference</li>
+        <li><a href="#component-reference">Component Reference</a></li>
+        <li><a href="#project-format">Project File Format</a></li>
+        <li><a href="#libraries">Libraries & Frameworks</a></li>
+        <li><a href="#inspiration">Similar Projects</a></li>
+
+        <li class="section-label">Meta</li>
+        <li><a href="#deployment">Deployment</a></li>
+        <li><a href="#contributing">Contributing</a></li>
+        <li><a href="#license">License</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────────── -->
+  <main>
+    <div class="content">
+
+      <!-- Hero -->
+      <div class="hero" id="overview">
+        <div class="hero-badge">▶ v0.x · MIT License · Browser-only · <span class="alpha-badge">ALPHA</span></div>
+        <h1>Projec<span>TUI</span></h1>
+        <p class="hero-sub">
+          A web-based visual editor for <strong style="color:var(--fg)">terminal user interfaces</strong>.
+          Drag components onto a faithful character-grid canvas, wire up multi-screen flows,
+          and export runnable code for Python, Go, or Rust — all without leaving the browser.
+        </p>
+        <div class="hero-actions">
+          <a href="../" class="btn btn-primary">▶ Open Editor</a>
+          <a href="https://github.com/lucasqueiroz/projectui" class="btn btn-outline">⎇ GitHub</a>
+        </div>
+      </div>
+
+      <!-- Overview -->
+      <section>
+        <div class="section-header">
+          <div class="section-id">§ overview</div>
+          <h2>What is ProjecTUI?</h2>
+        </div>
+
+        <p>
+          ProjecTUI is a zero-install, browser-only design tool for terminal applications.
+          Instead of writing layout code by hand, you visually arrange 23 component types
+          on a pixel-perfect terminal canvas — then click <strong style="color:var(--fg)">Export</strong> to get
+          production-quality code for the framework of your choice.
+        </p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="fc-icon">🎨</div>
+            <h4>Faithful renderer</h4>
+            <p>Box-drawing borders, ANSI colors, padding, gap, fill/auto/absolute sizing — rendered as a real terminal would show it.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">📦</div>
+            <h4>23 component types</h4>
+            <p>From basic text and buttons to tables, spinners, ASCII art banners, and tree views.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🖥️</div>
+            <h4>Multi-screen flows</h4>
+            <p>Design entire apps with named screens, then wire them together with a visual timeline.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">⚡</div>
+            <h4>3 export targets</h4>
+            <p>Python (Textual), Go (Bubble Tea + Lip Gloss), Rust (Ratatui). All idiomatic and runnable.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🔒</div>
+            <h4>No backend</h4>
+            <p>Everything runs in the browser. No accounts, no servers, no data sent anywhere.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🐍</div>
+            <h4>Live Python validation</h4>
+            <p>Optional WASM runtime (Pyodide) validates generated Python code in-browser.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screenshots -->
+      <section id="screenshots">
+        <div class="section-header">
+          <div class="section-id">§ screenshots</div>
+          <h2>Screenshots</h2>
+        </div>
+        <p>All screenshots are captured automatically by the Playwright E2E test suite on each run.</p>
+
+        <h3>Full application</h3>
+        <figure style="margin:1.5rem 0">
+          <img src="../e2e/screenshots/zz-full-app.png" alt="ProjecTUI — full app view showing canvas, layers panel and properties" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+          <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.5rem">Full editor — canvas (center), component library (left), properties panel (right).</figcaption>
+        </figure>
+
+        <h3>Components on canvas</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin:1.5rem 0">
+          <figure>
+            <img src="../e2e/screenshots/01-app-loaded.png" alt="App on first load" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">App on first load with default layout.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-02-spinner-on-canvas.png" alt="Spinner component on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Spinner widget placed on canvas.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-03-toast-on-canvas.png" alt="Toast notification on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Toast notification widget.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f2-04-asciitext-on-canvas.png" alt="ASCII text banner on canvas" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Large ASCII art banner (figlet-style).</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f5-01-border-props.png" alt="Border properties panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Border style and color options.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f10-01-timeline-visible.png" alt="Timeline panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Timeline panel for multi-screen flows.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/06-layers-panel.png" alt="Layers panel" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Layers panel showing component tree.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f3-01-rich-spans.png" alt="Rich spans on status bar" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Rich spans: per-word colors on a status bar.</figcaption>
+          </figure>
+          <figure>
+            <img src="../e2e/screenshots/f9-01-grid-in-library.png" alt="Grid component in library" style="width:100%;border:1px solid var(--border);border-radius:var(--radius)" loading="lazy" />
+            <figcaption style="font-size:12px;color:var(--fg-muted);margin-top:0.4rem">Grid layout component.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Getting Started -->
+      <section id="getting-started">
+        <div class="section-header">
+          <div class="section-id">§ getting-started</div>
+          <h2>Getting Started</h2>
+        </div>
+
+        <h3>Use online</h3>
+        <p>Open the editor directly — no install required:</p>
+
+        <div class="callout info">
+          <span class="callout-icon">ℹ️</span>
+          <p><strong>Open the editor</strong> by clicking <a href="../">the link at the top of this page</a>. Your work is auto-saved to <code>localStorage</code> and persists across reloads.</p>
+        </div>
+
+        <h3>Run locally</h3>
+        <p>Clone the repo and start the development server:</p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal</div>
+          </div>
+          <pre><code><span class="cmt"># Clone and install</span>
+git clone https://github.com/lucasqueiroz/projectui
+cd projectui
+npm install
+
+<span class="cmt"># Start dev server</span>
+npm run dev          <span class="cmt"># → http://localhost:5173</span>
+
+<span class="cmt"># Other commands</span>
+npm run build        <span class="cmt"># production build → dist/</span>
+npm run typecheck    <span class="cmt"># TypeScript check</span>
+npm run test         <span class="cmt"># Vitest unit tests</span>
+npm run test:e2e     <span class="cmt"># Playwright E2E tests</span></code></pre>
+        </div>
+
+        <h3>Quick start workflow</h3>
+        <ol class="steps">
+          <li><strong>Pick a template</strong> — click <strong style="color:var(--fg)">Templates</strong> in the top bar to start from a pre-built layout like Dashboard, Login Form, or Modal Dialog.</li>
+          <li><strong>Drag components</strong> — from the left panel onto the canvas, or onto an existing container to nest them.</li>
+          <li><strong>Edit properties</strong> — click any component to select it, then adjust colors, size, border, text, and layout in the right panel.</li>
+          <li><strong>Add screens</strong> — click <strong style="color:var(--fg)">+ Screen</strong> in the Layers panel to add a new screen and wire up a multi-screen flow.</li>
+          <li><strong>Export</strong> — open the <strong style="color:var(--fg)">Code</strong> tab and choose Python, Go, or Rust. Click the copy button and paste into your project.</li>
+        </ol>
+      </section>
+
+      <!-- AI Disclaimer -->
+      <section id="ai-disclaimer">
+        <div class="section-header">
+          <div class="section-id">§ ai-disclaimer</div>
+          <h2>AI Usage Disclaimer</h2>
+        </div>
+
+        <div class="callout warning">
+          <span class="callout-icon">⚠️</span>
+          <div>
+            <p><strong>Created with AI, reviewed by a human.</strong></p>
+            <p style="margin-top:0.5rem">Claude (Anthropic) assisted throughout development: architecture, feature implementation, code generation, red/green TDD cycles, refactoring, and documentation. The iterative agent-driven workflow accelerated delivery significantly.</p>
+            <p style="margin-top:0.5rem">All AI-generated code was reviewed, tested, and integrated by the author. Vitest unit tests and Playwright E2E tests validate correctness. Readers and contributors should be aware of this AI-assisted context when evaluating the codebase.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Canvas -->
+      <section id="canvas">
+        <div class="section-header">
+          <div class="section-id">§ usage · canvas</div>
+          <h2>The Canvas</h2>
+        </div>
+
+        <p>
+          The center panel is a <strong style="color:var(--fg)">character-grid terminal emulator</strong> — a 2D array of cells rendered as
+          styled <code>&lt;span&gt;</code> elements in the browser. Each cell is one character wide, faithfully
+          mimicking a monospace terminal. What you see is as close as possible to what your
+          real framework will render at runtime.
+        </p>
+
+        <h3>Navigation</h3>
+        <ul>
+          <li><strong>Drag</strong> a component from the library onto any container to add it.</li>
+          <li><strong>Click</strong> a component on the canvas to select it and open its properties.</li>
+          <li><strong>Hover</strong> to see a dashed border around the hovered component.</li>
+          <li><strong>Multi-select</strong> with <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + click.</li>
+          <li><strong>Zoom</strong> with the <code>−</code> / <code>+</code> controls in the top bar.</li>
+          <li><kbd>Backspace</kbd> or <kbd>Delete</kbd> removes the selected component.</li>
+        </ul>
+
+        <h3>Viewport presets</h3>
+        <p>
+          The top bar lets you switch between common terminal dimensions — 80×24, 100×30, 120×40, and more —
+          as well as enter a custom width and height. The canvas reflows instantly.
+        </p>
+
+        <h3>Themes</h3>
+        <p>Choose a color palette from the top bar: <strong style="color:var(--fg)">Tokyo Night</strong> (default), <strong style="color:var(--fg)">Dracula</strong>, <strong style="color:var(--fg)">Solarized Dark</strong>, or <strong style="color:var(--fg)">Mono</strong>. Themes affect both the canvas preview colors and the generated code's color values.</p>
+      </section>
+
+      <!-- Components -->
+      <section id="components">
+        <div class="section-header">
+          <div class="section-id">§ usage · components</div>
+          <h2>Components</h2>
+        </div>
+
+        <p>
+          The left panel shows the <strong style="color:var(--fg)">Component Library</strong> — 23 draggable types grouped by category.
+          Drag any component onto the canvas or into the tree in the Layers panel.
+        </p>
+
+        <h3>Layout components</h3>
+        <p>All layout is driven by <strong style="color:var(--fg)">containers</strong>. A container is a flex box: set direction (<code>row</code>/<code>column</code>), gap, padding, alignment, and justification. Nest containers to build complex layouts.</p>
+
+        <ul>
+          <li><code>container</code> — flex layout root. The canvas has one implicit root container.</li>
+          <li><code>grid</code> — 2D grid; set <code>gridCols</code> and <code>gridGap</code>.</li>
+          <li><code>viewport</code> — marks a scrollable area (static in preview).</li>
+        </ul>
+
+        <h3>Sizing</h3>
+        <p>Each component has a <code>width</code> and <code>height</code> prop that accepts:</p>
+        <ul>
+          <li><code>fill</code> — expand to fill available space (like CSS <code>flex: 1</code>).</li>
+          <li><code>auto</code> — shrink-wrap to content.</li>
+          <li><code>N</code> — fixed character count (e.g. <code>40</code>).</li>
+        </ul>
+
+        <h3>Absolute positioning</h3>
+        <p>Enable <strong style="color:var(--fg)">Absolute</strong> in the Properties panel to place a component at a fixed X/Y offset within its parent's inner area. Useful for overlays, modals, and status bars pinned to a corner.</p>
+      </section>
+
+      <!-- Properties -->
+      <section id="properties">
+        <div class="section-header">
+          <div class="section-id">§ usage · properties</div>
+          <h2>Properties Panel</h2>
+        </div>
+
+        <p>The right panel shows all editable props for the selected component. Sections include:</p>
+
+        <ul>
+          <li><strong>Label / Value</strong> — the text content.</li>
+          <li><strong>Colors</strong> — <code>fg</code> (text), <code>bg</code> (fill), <code>border color</code>, <code>title color</code>. All ANSI palette.</li>
+          <li><strong>Border</strong> — style (solid, rounded, double, thick, ascii), visibility, title text and alignment.</li>
+          <li><strong>Layout</strong> — direction, width, height, padding, gap, alignment, justification.</li>
+          <li><strong>Absolute position</strong> — X/Y character offsets.</li>
+          <li><strong>Color animation</strong> — solid, gradient, or rainbow; with direction (ltr, rtl, center-out, sides-in). Available on <code>progressbar</code>, <code>text</code>, and more.</li>
+          <li><strong>Rich spans</strong> — for <code>text</code> and <code>statusbar</code>: define per-word <code>fg</code>, <code>bg</code>, and <code>bold</code>.</li>
+        </ul>
+
+        <h3>Rich spans example</h3>
+        <p>In the status bar below, each section has a different color:</p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal preview</div>
+          </div>
+          <pre><code>┌───────────────────────────────────────────────────┐
+│                                                   │
+└───────────────────────────────────────────────────┘
+<span style="color:#9ece6a;background:#1f2335"> NORMAL </span><span style="color:#7aa2f7;background:#1f2335"> main.py </span><span style="color:#e0af68;background:#1f2335">  Ln 42, Col 8 </span><span style="color:#f7768e;background:#1f2335"> ✗ 2 errors </span></code></pre>
+        </div>
+      </section>
+
+      <!-- Layers -->
+      <section id="layers">
+        <div class="section-header">
+          <div class="section-id">§ usage · layers</div>
+          <h2>Layers &amp; Screens</h2>
+        </div>
+
+        <p>
+          A <strong style="color:var(--fg)">project</strong> contains one or more <strong style="color:var(--fg)">screens</strong> (also called layers).
+          Each screen is an independent canvas with its own component tree.
+          Use multiple screens to design an entire application — login, dashboard, detail view, modal, etc.
+        </p>
+
+        <h3>Managing screens</h3>
+        <ul>
+          <li>Click <strong style="color:var(--fg)">+ Screen</strong> in the Layers panel to add a new screen.</li>
+          <li>Double-click a screen tab to rename it.</li>
+          <li>Drag a tab to reorder screens.</li>
+          <li>Click the eye icon to toggle visibility (hidden screens are still exported).</li>
+          <li>Click the lock icon to prevent accidental edits.</li>
+          <li>The trash icon deletes a screen.</li>
+        </ul>
+
+        <h3>Component tree</h3>
+        <p>
+          The Layers panel also shows the <strong style="color:var(--fg)">component tree</strong> for the active screen.
+          You can drag items in the tree to rearrange nesting, and click any node to select it on the canvas.
+        </p>
+      </section>
+
+      <!-- Timeline -->
+      <section id="timeline">
+        <div class="section-header">
+          <div class="section-id">§ usage · timeline</div>
+          <h2>Timeline Panel</h2>
+        </div>
+
+        <p>
+          The <strong style="color:var(--fg)">Timeline</strong> panel at the bottom of the workspace is a visual flow diagram
+          that lets you model how a user moves between screens.
+        </p>
+
+        <ol class="steps">
+          <li>Each screen is automatically added as a <strong>step</strong> in the timeline.</li>
+          <li>Click <strong style="color:var(--fg)">+ Transition</strong> to connect two steps. Choose the event type: <code>keypress</code>, <code>click</code>, or <code>custom</code>, and optionally set a trigger string like <code>"q"</code> or <code>"enter"</code>.</li>
+          <li>Click any step in the timeline to jump directly to that screen in the canvas.</li>
+          <li>Double-click a step label to rename it.</li>
+          <li>Click <strong style="color:var(--fg)">Export Mermaid</strong> to get a Mermaid flowchart of the entire flow (paste into any Markdown file or Mermaid live editor).</li>
+        </ol>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">mermaid output example</div>
+          </div>
+          <pre><code>flowchart LR
+  Login --> Dashboard
+  Login --> |keypress: enter| Dashboard
+  Dashboard --> |keypress: q| Quit
+  Dashboard --> |click| Detail</code></pre>
+        </div>
+      </section>
+
+      <!-- Exporting -->
+      <section id="exporting">
+        <div class="section-header">
+          <div class="section-id">§ usage · exporting</div>
+          <h2>Exporting Code</h2>
+        </div>
+
+        <p>
+          Click the <strong style="color:var(--fg)">Code</strong> tab (top bar) to open the export panel.
+          Choose a language tab, then hit the <strong style="color:var(--fg)">Copy</strong> button.
+          The exported code is self-contained and runnable with only the target framework installed.
+        </p>
+
+        <div class="callout info">
+          <span class="callout-icon">💡</span>
+          <p><strong>Python validation:</strong> click <strong>Run in browser</strong> in the Python tab to validate syntax using <a href="https://pyodide.org/">Pyodide</a> (loaded on demand, ~10 MB). This does not execute the app — it confirms the generated Python parses and imports correctly.</p>
+        </div>
+
+        <h3>JSON round-trip</h3>
+        <p>Use <strong style="color:var(--fg)">Export JSON</strong> and <strong style="color:var(--fg)">Import</strong> in the top bar to save/load projects as files. The JSON format is documented in the <a href="#project-format">Project File Format</a> section below.</p>
+      </section>
+
+      <!-- Sharing -->
+      <section id="sharing">
+        <div class="section-header">
+          <div class="section-id">§ usage · sharing</div>
+          <h2>Sharing Projects</h2>
+        </div>
+
+        <p>
+          Click <strong style="color:var(--fg)">Share</strong> in the top bar to generate a URL that encodes your entire project in the URL fragment.
+          The project JSON is compressed (LZ-string) and Base64-encoded. Recipients open the URL and the project loads directly — no files exchanged, no login.
+        </p>
+
+        <div class="callout warning">
+          <span class="callout-icon">⚠️</span>
+          <p>Share URLs can get long for large projects. Most browsers and URL shorteners handle them fine, but some chat tools truncate long URLs. Use <strong>Export JSON</strong> for large projects that need reliable sharing.</p>
+        </div>
+      </section>
+
+      <!-- Keyboard Shortcuts -->
+      <section id="shortcuts">
+        <div class="section-header">
+          <div class="section-id">§ usage · shortcuts</div>
+          <h2>Keyboard Shortcuts</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Shortcut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><kbd>⌘Z</kbd> / <kbd>Ctrl+Z</kbd></td><td>Undo</td></tr>
+              <tr><td><kbd>⌘⇧Z</kbd> / <kbd>Ctrl+Shift+Z</kbd></td><td>Redo</td></tr>
+              <tr><td><kbd>⌫</kbd> / <kbd>Delete</kbd></td><td>Delete selected component</td></tr>
+              <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd></td><td>Open command palette</td></tr>
+              <tr><td><kbd>⌘</kbd> + click</td><td>Multi-select components</td></tr>
+              <tr><td><kbd>Escape</kbd></td><td>Deselect / close palette</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Python export -->
+      <section id="export-python">
+        <div class="section-header">
+          <div class="section-id">§ export-targets · python</div>
+          <h2>Python · Textual</h2>
+        </div>
+
+        <p>
+          <a href="https://github.com/Textualize/textual">Textual</a> is a Python framework for building TUI apps with a CSS-like layout engine and rich widget library.
+          Install it with <code>pip install textual</code>, then run the exported file directly.
+        </p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">generated Python (Textual)</div>
+          </div>
+          <pre><code><span class="kw">from</span> textual.app <span class="kw">import</span> App, ComposeResult
+<span class="kw">from</span> textual.widgets <span class="kw">import</span> Static, Button, Input, ListView, ListItem
+
+<span class="kw">class</span> <span class="cls">MyApp</span>(App):
+    CSS = <span class="str">"""
+    Screen {
+        layout: vertical;
+    }
+    #header {
+        width: 100%;
+        height: 3;
+        background: $primary;
+        color: $text;
+        border: solid $accent;
+    }
+    #body {
+        layout: horizontal;
+        height: 1fr;
+    }
+    """</span>
+
+    <span class="kw">def</span> <span class="fn">compose</span>(self) -> ComposeResult:
+        <span class="kw">yield</span> Static(<span class="str">"My Dashboard"</span>, id=<span class="str">"header"</span>)
+        <span class="kw">with</span> <span class="cls">Static</span>(id=<span class="str">"body"</span>):
+            <span class="kw">yield</span> <span class="cls">ListView</span>(
+                <span class="cls">ListItem</span>(<span class="cls">Static</span>(<span class="str">"Item 1"</span>)),
+                <span class="cls">ListItem</span>(<span class="cls">Static</span>(<span class="str">"Item 2"</span>)),
+                id=<span class="str">"sidebar"</span>,
+            )
+            <span class="kw">yield</span> <span class="cls">Static</span>(<span class="str">"Main content area"</span>, id=<span class="str">"main"</span>)
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    <span class="cls">MyApp</span>().run()</code></pre>
+        </div>
+
+        <h3>Running the output</h3>
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal</div>
+          </div>
+          <pre><code>pip install textual
+python my_app.py</code></pre>
+        </div>
+
+        <p>See the <a href="https://textual.textualize.io/">Textual documentation</a> for full widget API reference, reactive state, CSS animations, and testing tools.</p>
+      </section>
+
+      <!-- Go export -->
+      <section id="export-go">
+        <div class="section-header">
+          <div class="section-id">§ export-targets · go</div>
+          <h2>Go · Bubble Tea</h2>
+        </div>
+
+        <p>
+          <a href="https://github.com/charmbracelet/bubbletea">Bubble Tea</a> is the Elm-architecture TUI framework from <a href="https://charm.sh/">Charm</a>.
+          <a href="https://github.com/charmbracelet/lipgloss">Lip Gloss</a> handles styling (borders, colors, alignment).
+          The exported code targets Go 1.21+.
+        </p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">generated Go (Bubble Tea)</div>
+          </div>
+          <pre><code><span class="kw">package</span> main
+
+<span class="kw">import</span> (
+    <span class="str">"fmt"</span>
+    tea <span class="str">"github.com/charmbracelet/bubbletea"</span>
+    <span class="str">"github.com/charmbracelet/lipgloss"</span>
+)
+
+<span class="kw">var</span> (
+    headerStyle = lipgloss.<span class="fn">NewStyle</span>().
+        <span class="fn">Bold</span>(<span class="kw">true</span>).
+        <span class="fn">Foreground</span>(lipgloss.<span class="fn">Color</span>(<span class="str">"#7aa2f7"</span>)).
+        <span class="fn">Border</span>(lipgloss.RoundedBorder()).
+        <span class="fn">Width</span>(<span class="num">80</span>)
+)
+
+<span class="kw">type</span> <span class="cls">model</span> <span class="kw">struct</span>{ items []<span class="type">string</span> }
+
+<span class="kw">func</span> (m <span class="cls">model</span>) <span class="fn">Init</span>() tea.<span class="cls">Cmd</span> { <span class="kw">return nil</span> }
+
+<span class="kw">func</span> (m <span class="cls">model</span>) <span class="fn">Update</span>(msg tea.<span class="cls">Msg</span>) (tea.<span class="cls">Model</span>, tea.<span class="cls">Cmd</span>) {
+    <span class="kw">switch</span> msg := msg.(<span class="kw">type</span>) {
+    <span class="kw">case</span> tea.<span class="cls">KeyMsg</span>:
+        <span class="kw">if</span> msg.<span class="cls">String</span>() == <span class="str">"q"</span> { <span class="kw">return</span> m, tea.Quit }
+    }
+    <span class="kw">return</span> m, <span class="kw">nil</span>
+}
+
+<span class="kw">func</span> (m <span class="cls">model</span>) <span class="fn">View</span>() <span class="type">string</span> {
+    <span class="kw">return</span> headerStyle.<span class="fn">Render</span>(<span class="str">"My Dashboard"</span>)
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    p := tea.<span class="fn">NewProgram</span>(<span class="cls">model</span>{})
+    <span class="kw">if</span> _, err := p.<span class="fn">Run</span>(); err != <span class="kw">nil</span> {
+        fmt.<span class="fn">Printf</span>(<span class="str">"error: %v\n"</span>, err)
+    }
+}</code></pre>
+        </div>
+
+        <h3>Running the output</h3>
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal</div>
+          </div>
+          <pre><code>go mod init myapp
+go get github.com/charmbracelet/bubbletea
+go get github.com/charmbracelet/lipgloss
+go run main.go</code></pre>
+        </div>
+
+        <p>See the <a href="https://github.com/charmbracelet/bubbletea/tree/master/examples">Bubble Tea examples</a> and <a href="https://github.com/charmbracelet/lipgloss">Lip Gloss documentation</a> for full API reference.</p>
+      </section>
+
+      <!-- Rust export -->
+      <section id="export-rust">
+        <div class="section-header">
+          <div class="section-id">§ export-targets · rust</div>
+          <h2>Rust · Ratatui</h2>
+        </div>
+
+        <p>
+          <a href="https://github.com/ratatui-org/ratatui">Ratatui</a> is a Rust TUI library built on <a href="https://github.com/crossterm-rs/crossterm">Crossterm</a>.
+          The generated code uses the immediate-mode rendering model — a <code>draw()</code> call on every event.
+        </p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">generated Rust (Ratatui)</div>
+          </div>
+          <pre><code><span class="kw">use</span> ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Paragraph},
+    Terminal,
+};
+<span class="kw">use</span> crossterm::event::{self, Event, KeyCode};
+
+<span class="kw">fn</span> <span class="fn">main</span>() -> Result&lt;(), Box&lt;<span class="kw">dyn</span> std::error::Error&gt;&gt; {
+    crossterm::terminal::enable_raw_mode()?;
+    <span class="kw">let</span> stdout = std::io::stdout();
+    <span class="kw">let</span> backend = CrosstermBackend::new(stdout);
+    <span class="kw">let</span> <span class="kw">mut</span> terminal = Terminal::new(backend)?;
+
+    <span class="kw">loop</span> {
+        terminal.draw(|f| {
+            <span class="kw">let</span> chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(<span class="num">3</span>),
+                    Constraint::Min(<span class="num">0</span>),
+                ])
+                .split(f.size());
+
+            <span class="kw">let</span> header = Paragraph::new(<span class="str">"My Dashboard"</span>)
+                .block(Block::default()
+                    .borders(Borders::ALL)
+                    .title(<span class="str">" App "</span>))
+                .style(Style::default()
+                    .fg(Color::Rgb(<span class="num">122</span>, <span class="num">162</span>, <span class="num">247</span>)));
+            f.render_widget(header, chunks[<span class="num">0</span>]);
+        })?;
+
+        <span class="kw">if let</span> Event::Key(key) = event::read()? {
+            <span class="kw">if</span> key.code == KeyCode::Char(<span class="str">'q'</span>) { <span class="kw">break</span>; }
+        }
+    }
+    crossterm::terminal::disable_raw_mode()?;
+    Ok(())
+}</code></pre>
+        </div>
+
+        <h3>Running the output</h3>
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal</div>
+          </div>
+          <pre><code>cargo add ratatui crossterm
+cargo run</code></pre>
+        </div>
+
+        <p>See the <a href="https://ratatui.rs/">Ratatui documentation</a> and <a href="https://github.com/ratatui-org/templates">official templates</a> for production patterns.</p>
+      </section>
+
+      <!-- Component reference -->
+      <section id="component-reference">
+        <div class="section-header">
+          <div class="section-id">§ reference · components</div>
+          <h2>Component Reference</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>container</code></td><td>Layout</td><td>Flex layout box. Direction, gap, padding, alignment, border, title.</td></tr>
+              <tr><td><code>grid</code></td><td>Layout</td><td>2D grid layout. Set <code>gridCols</code> and <code>gridGap</code>.</td></tr>
+              <tr><td><code>viewport</code></td><td>Layout</td><td>Scrollable content area. Static in preview.</td></tr>
+              <tr><td><code>text</code></td><td>Basic</td><td>Inline text. Supports rich spans (per-word fg/bg/bold) and color animations.</td></tr>
+              <tr><td><code>button</code></td><td>Basic</td><td>Focusable button with label.</td></tr>
+              <tr><td><code>input</code></td><td>Basic</td><td>Single-line text input with placeholder.</td></tr>
+              <tr><td><code>checkbox</code></td><td>Basic</td><td>Checkbox with label and checked state.</td></tr>
+              <tr><td><code>select</code></td><td>Basic</td><td>Dropdown selector with option list.</td></tr>
+              <tr><td><code>list</code></td><td>Basic</td><td>Scrollable item list. Configurable selection colors and icons.</td></tr>
+              <tr><td><code>textarea</code></td><td>Basic</td><td>Multi-line text input.</td></tr>
+              <tr><td><code>divider</code></td><td>Basic</td><td>Horizontal or vertical separator. Optional centered/left/right label.</td></tr>
+              <tr><td><code>table</code></td><td>Advanced</td><td>Data table with configurable columns and rows.</td></tr>
+              <tr><td><code>tabs</code></td><td>Advanced</td><td>Tabbed panel with switchable content areas.</td></tr>
+              <tr><td><code>statusbar</code></td><td>Advanced</td><td>Status bar. Rich spans for multi-color segments.</td></tr>
+              <tr><td><code>progressbar</code></td><td>Advanced</td><td>Progress bar with value and animated color effects.</td></tr>
+              <tr><td><code>spinner</code></td><td>Advanced</td><td>Animated loading indicator. Styles: <code>dots</code>, <code>line</code>, <code>braille</code>, <code>arc</code>.</td></tr>
+              <tr><td><code>timer</code></td><td>Advanced</td><td>Time display (<code>01:23:45</code>). Set <code>timerValue</code>.</td></tr>
+              <tr><td><code>toast</code></td><td>Advanced</td><td>Notification box. Variants: <code>info</code>, <code>success</code>, <code>warning</code>, <code>error</code>.</td></tr>
+              <tr><td><code>filepicker</code></td><td>Advanced</td><td>File browser widget with configurable items.</td></tr>
+              <tr><td><code>asciitext</code></td><td>Advanced</td><td>Large figlet-style ASCII art banner. Renders letters and digits in a 3-row glyph font.</td></tr>
+              <tr><td><code>modal</code></td><td>Advanced</td><td>Dialog overlay with title and content.</td></tr>
+              <tr><td><code>treeview</code></td><td>Advanced</td><td>Hierarchical tree view with expandable nodes.</td></tr>
+              <tr><td><code>metriccard</code></td><td>Advanced</td><td>Metric display card with value and label. Good for dashboards.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Project format -->
+      <section id="project-format">
+        <div class="section-header">
+          <div class="section-id">§ reference · format</div>
+          <h2>Project File Format</h2>
+        </div>
+
+        <p>
+          Projects are stored as JSON. Use <strong style="color:var(--fg)">Export JSON</strong> and <strong style="color:var(--fg)">Import</strong> in the top bar to save and load files. Old files without <code>layers</code> / <code>timeline</code> are auto-migrated on load.
+        </p>
+
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">project.json</div>
+          </div>
+          <pre><code>{
+  <span class="str">"rootId"</span>: <span class="str">"root_abc"</span>,
+  <span class="str">"components"</span>: {
+    <span class="str">"root_abc"</span>: { <span class="str">"id"</span>: <span class="str">"root_abc"</span>, <span class="str">"type"</span>: <span class="str">"container"</span>, ... }
+  },
+  <span class="str">"termCols"</span>: <span class="num">100</span>,
+  <span class="str">"termRows"</span>: <span class="num">30</span>,
+  <span class="str">"theme"</span>: <span class="str">"tokyo-night"</span>,
+  <span class="str">"layers"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"layer_1"</span>,
+      <span class="str">"name"</span>: <span class="str">"Dashboard"</span>,
+      <span class="str">"rootId"</span>: <span class="str">"root_abc"</span>,
+      <span class="str">"components"</span>: { ... }
+    }
+  ],
+  <span class="str">"activeLayerIndex"</span>: <span class="num">0</span>,
+  <span class="str">"timelineSteps"</span>: [
+    { <span class="str">"id"</span>: <span class="str">"step_1"</span>, <span class="str">"layerId"</span>: <span class="str">"layer_1"</span>, <span class="str">"label"</span>: <span class="str">"Dashboard"</span> }
+  ],
+  <span class="str">"timelineTransitions"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"trans_1"</span>,
+      <span class="str">"fromStepId"</span>: <span class="str">"step_1"</span>,
+      <span class="str">"toStepId"</span>: <span class="str">"step_2"</span>,
+      <span class="str">"event"</span>: <span class="str">"keypress"</span>,
+      <span class="str">"trigger"</span>: <span class="str">"q"</span>
+    }
+  ]
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Libraries -->
+      <section id="libraries">
+        <div class="section-header">
+          <div class="section-id">§ reference · libraries</div>
+          <h2>Libraries &amp; Frameworks</h2>
+        </div>
+
+        <h3>TUI export targets</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Framework</th><th>Language</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://github.com/Textualize/textual">Textual</a></td>
+                <td>Python</td>
+                <td>Rich TUI framework with CSS-like layout. Built on <a href="https://github.com/Textualize/rich">Rich</a>. <a href="https://textual.textualize.io/">Docs →</a></td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/bubbletea">Bubble Tea</a></td>
+                <td>Go</td>
+                <td>Elm-architecture TUI framework from <a href="https://charm.sh/">Charm</a>. <a href="https://github.com/charmbracelet/bubbletea/tree/master/examples">Examples →</a></td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/lipgloss">Lip Gloss</a></td>
+                <td>Go</td>
+                <td>CSS-like layout and styling companion to Bubble Tea.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/ratatui-org/ratatui">Ratatui</a></td>
+                <td>Rust</td>
+                <td>Immediate-mode TUI library. Fork of the archived tui-rs. <a href="https://ratatui.rs/">Docs →</a></td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/crossterm-rs/crossterm">Crossterm</a></td>
+                <td>Rust</td>
+                <td>Cross-platform terminal backend for Ratatui.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Related TUI libraries (not used, but in the ecosystem)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Framework</th><th>Language</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://github.com/vadimdemedes/ink">Ink</a></td>
+                <td>Node.js</td>
+                <td>React for interactive command-line apps. Uses same model as this builder's UI.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/bubbles">Bubbles</a></td>
+                <td>Go</td>
+                <td>Reusable Bubble Tea components (spinner, progress, viewport, textinput).</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/huh">Huh</a></td>
+                <td>Go</td>
+                <td>Forms and prompts built on Bubble Tea. Used in many Charm CLIs.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/gum">Gum</a></td>
+                <td>Go</td>
+                <td>Glamorous shell script components (fuzzy search, confirm, spin).</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/rivo/tview">tview</a></td>
+                <td>Go</td>
+                <td>Rich interactive widgets for the terminal (tables, forms, flex layouts).</td>
+              </tr>
+              <tr>
+                <td><a href="https://urwid.org/">urwid</a></td>
+                <td>Python</td>
+                <td>Mature Python TUI library predating Textual.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/Textualize/rich">Rich</a></td>
+                <td>Python</td>
+                <td>Rich text and beautiful formatting in the terminal. Foundation for Textual.</td>
+              </tr>
+              <tr>
+                <td><a href="https://invisible-island.net/ncurses/">ncurses</a></td>
+                <td>C</td>
+                <td>The foundational terminal library most TUI toolkits build on.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Builder's own stack</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Library</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><a href="https://react.dev/">React 18</a></td><td>UI framework for the editor</td></tr>
+              <tr><td><a href="https://github.com/pmndrs/zustand">Zustand</a></td><td>Global state management (editor store, undo/redo)</td></tr>
+              <tr><td><a href="https://tailwindcss.com/">Tailwind CSS</a></td><td>Utility-first styling for the editor UI</td></tr>
+              <tr><td><a href="https://vitejs.dev/">Vite</a></td><td>Build tool and dev server</td></tr>
+              <tr><td><a href="https://pyodide.org/">Pyodide</a></td><td>Python runtime via WebAssembly (optional live validation)</td></tr>
+              <tr><td><a href="https://vitest.dev/">Vitest</a></td><td>Unit testing</td></tr>
+              <tr><td><a href="https://playwright.dev/">Playwright</a></td><td>End-to-end testing</td></tr>
+              <tr><td><a href="https://www.typescriptlang.org/">TypeScript</a></td><td>Type-safe development throughout</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Similar Projects -->
+      <section id="inspiration">
+        <div class="section-header">
+          <div class="section-id">§ reference · inspiration</div>
+          <h2>Similar Projects &amp; Inspiration</h2>
+        </div>
+
+        <p>ProjecTUI was inspired by these tools and projects:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Project</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://ascii-motion.app/">ascii-motion.app</a></td>
+                <td>ASCII art animation editor in the browser. Inspired the idea of a canvas-based terminal design tool.</td>
+              </tr>
+              <tr>
+                <td><a href="https://tui.builders">tui.builders</a></td>
+                <td>Another web-based TUI design tool. Direct peer in the same problem space.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/jesseduffield/lazygit">Lazygit</a></td>
+                <td>A beautifully designed TUI app in Go. Exemplary use of Bubble Tea-style layout — a major design reference for what good TUI design looks like.</td>
+              </tr>
+              <tr>
+                <td><a href="https://xtermjs.org/">xterm.js</a></td>
+                <td>Browser-based terminal emulator. Shows how real terminals render in the browser.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/tsl0922/ttyd">ttyd</a></td>
+                <td>Share your terminal over the web. Good reference for what in-browser terminal rendering looks like.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/charmbracelet/vhs">VHS</a></td>
+                <td>Record your terminal as a GIF. Another Charm tool showing how terminal UIs can be captured and shared.</td>
+              </tr>
+              <tr>
+                <td><a href="https://github.com/nicowillis/figma-for-terminal">Figma for Terminal</a> (concept)</td>
+                <td>Community discussion threads about what a visual TUI design tool should look like.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout success">
+          <span class="callout-icon">💬</span>
+          <p>Know another TUI builder or ASCII canvas tool? <a href="https://github.com/lucasqueiroz/projectui/issues">Open an issue</a> and we'll add it to the list.</p>
+        </div>
+      </section>
+
+      <!-- Deployment -->
+      <section id="deployment">
+        <div class="section-header">
+          <div class="section-id">§ meta · deployment</div>
+          <h2>Deployment</h2>
+        </div>
+
+        <p>The build output is a static site — no server required. Works offline after first load.</p>
+
+        <h3>GitHub Pages</h3>
+        <p>A workflow at <code>.github/workflows/deploy.yml</code> builds and deploys automatically on push to <code>main</code>. Enable in repo Settings → Pages → Source = "GitHub Actions".</p>
+
+        <h3>Netlify</h3>
+        <p><code>netlify.toml</code> is included. Connect the repo — Netlify runs <code>npm run build</code> and serves <code>dist/</code>.</p>
+
+        <h3>Anywhere else</h3>
+        <div class="term-block">
+          <div class="term-block-bar">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <div class="term-title">terminal</div>
+          </div>
+          <pre><code>npm run build
+<span class="cmt"># upload dist/ to Cloudflare Pages, Vercel, S3 + CloudFront, etc.</span></code></pre>
+        </div>
+      </section>
+
+      <!-- Contributing -->
+      <section id="contributing">
+        <div class="section-header">
+          <div class="section-id">§ meta · contributing</div>
+          <h2>Contributing</h2>
+        </div>
+
+        <p>Contributions are welcome. The codebase is TypeScript throughout with strict mode enabled. Tests are required for new exporters and renderer changes.</p>
+
+        <ul>
+          <li>Open an issue before working on large features.</li>
+          <li>Run <code>npm run test</code> and <code>npm run typecheck</code> before submitting a PR.</li>
+          <li>Exporter changes need corresponding unit tests in <code>src/__tests__/</code>.</li>
+          <li>New component types need entries in <code>componentDefs.ts</code> and all three exporters.</li>
+        </ul>
+      </section>
+
+      <!-- License -->
+      <section id="license">
+        <div class="section-header">
+          <div class="section-id">§ meta · license</div>
+          <h2>License</h2>
+        </div>
+        <p>MIT — see <a href="../LICENSE">LICENSE</a> in the repository root.</p>
+        <p style="color:var(--fg-muted);font-size:13px">Copyright © 2024–2026 Lucas Queiroz.</p>
+      </section>
+
+    </div><!-- /.content -->
+
+    <footer>
+      <div>
+        <span style="color:var(--fg)">ProjecTUI</span> · MIT License ·
+        <a href="../">Open Editor</a> ·
+        <a href="https://github.com/lucasqueiroz/projectui">GitHub</a>
+      </div>
+      <div class="ai-badge">✦ Built with heavy AI assistance</div>
+    </footer>
+
+  </main><!-- /.main -->
+
+</div><!-- /.layout -->
+
+
+</body>
+</html>

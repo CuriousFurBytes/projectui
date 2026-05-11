@@ -1,0 +1,181 @@
+// Generates a Ratatui (Rust) TUI application from the project tree.
+//
+// Run:
+//   cargo new tui-app && cd tui-app
+//   # Add to Cargo.toml: ratatui = "0.29", crossterm = "0.28"
+//   cargo run
+import type { ComponentNode, ProjectState } from '@/types/component';
+
+function rustStr(s: string): string {
+  return JSON.stringify(s);
+}
+
+function borderStyle(b: string | undefined): string {
+  switch (b) {
+    case 'double': return 'BorderType::Double';
+    case 'rounded': return 'BorderType::Rounded';
+    case 'thick': return 'BorderType::Thick';
+    case 'ascii': return 'BorderType::Plain'; // ratatui uses Plain for ASCII
+    default: return 'BorderType::Plain';
+  }
+}
+
+function renderWidget(node: ComponentNode, components: Record<string, ComponentNode>, depth: number): string {
+  const pad = '    '.repeat(depth);
+  const p = node.props;
+
+  switch (node.type) {
+    case 'container':
+    case 'modal': {
+      const children = node.children
+        .map((cid) => components[cid])
+        .filter(Boolean)
+        .map((c) => renderWidget(c, components, depth + 1));
+      const direction = p.direction === 'row' ? 'Horizontal' : 'Vertical';
+      if (children.length === 0) {
+        const hasBorder = p.border && p.border !== 'none';
+        if (!hasBorder) return `${pad}Paragraph::new("")`;
+        return `${pad}Block::bordered()\n${pad}    .border_type(${borderStyle(p.border)})`;
+      }
+      const childStr = children.join(',\n') + ',';
+      const layout = `${pad}${direction}::new([\n${childStr}\n${pad}])`;
+      if (p.border && p.border !== 'none') {
+        const block = `${pad}Block::bordered()\n${pad}    .border_type(${borderStyle(p.border)})\n${pad}    .title(${rustStr(p.title ?? '')})`;
+        // Render the bordered Block, then the children layout below it.
+        return `${block},\n${pad}// children:\n${layout}`;
+      }
+      return layout;
+    }
+    case 'text':
+      return `${pad}Paragraph::new(${rustStr(p.text ?? '')})`;
+    case 'button':
+      return `${pad}Paragraph::new(${rustStr(`[ ${p.text ?? 'Button'} ]`)})\n${pad}    .block(Block::bordered().border_type(BorderType::Rounded))`;
+    case 'input':
+      return `${pad}Paragraph::new(${rustStr(String(p.value ?? '') || p.placeholder || '')})\n${pad}    .block(Block::bordered())`;
+    case 'textarea':
+      return `${pad}Paragraph::new(${rustStr(String(p.value ?? '') || p.placeholder || '')})\n${pad}    .block(Block::bordered())`;
+    case 'checkbox':
+      return `${pad}Paragraph::new(${rustStr(`${p.checked ? '[x]' : '[ ]'} ${p.label ?? ''}`)})`;
+    case 'list': {
+      const items = (p.items ?? []).map((it) => `ListItem::new(${rustStr(it)})`).join(', ');
+      return `${pad}List::new(vec![${items}])\n${pad}    .block(Block::bordered())`;
+    }
+    case 'tabs': {
+      const titles = (p.items ?? []).map((it) => rustStr(it)).join(', ');
+      return `${pad}Tabs::new(vec![${titles}])\n${pad}    .select(${p.selectedIndex ?? 0})`;
+    }
+    case 'progressbar': {
+      const pct = Math.round((p.progress ?? 0) * 100);
+      return `${pad}Gauge::default()\n${pad}    .percent(${pct})`;
+    }
+    case 'table': {
+      const headers = (p.columns ?? []).map((c) => rustStr(c)).join(', ');
+      return `${pad}Table::new(\n${pad}    vec![Row::new(vec![${headers}])],\n${pad}    [Constraint::Fill(1)],\n${pad})`;
+    }
+    case 'statusbar':
+      return `${pad}Paragraph::new(${rustStr(p.text ?? '')})\n${pad}    .style(Style::default().bg(Color::Cyan).fg(Color::Black))`;
+    case 'divider':
+      return `${pad}Block::new().borders(Borders::TOP)`;
+    case 'asciitext':
+      return `${pad}Paragraph::new(${rustStr(p.text ?? 'TEXT')})`;
+    case 'spinner':
+      return `${pad}Paragraph::new("⠋ Loading...")`;
+    case 'toast':
+      return `${pad}Paragraph::new(${rustStr(`[${p.toastVariant ?? 'info'}] ${p.text ?? ''}`)})\n${pad}    .block(Block::bordered())`;
+    case 'timer':
+      return `${pad}Paragraph::new(${rustStr(p.timerValue ?? '00:00')})`;
+    case 'filepicker': {
+      const items = (p.items ?? ['Documents/', 'Downloads/', 'file.txt'])
+        .map((f) => `ListItem::new(${rustStr(f)})`).join(', ');
+      return `${pad}List::new(vec![${items}])\n${pad}    .block(Block::bordered().title(${rustStr(p.title ?? ' Files ')}))`;
+    }
+    case 'treeview': {
+      const items = (p.treeItems ?? []).map((ti) => `ListItem::new(${rustStr(`▶ ${ti.label ?? ''}`)})`).join(', ');
+      return `${pad}List::new(vec![${items || `ListItem::new("▶ item")`}])\n${pad}    .block(Block::bordered())`;
+    }
+    case 'metriccard':
+      return `${pad}Paragraph::new(${rustStr(`${p.metricLabel ?? 'Metric'}: ${p.metricValue ?? '—'}${p.metricDelta ? ` (${p.metricDelta})` : ''}`)})\n${pad}    .block(Block::bordered())`;
+    case 'markdowntext':
+      return `${pad}Paragraph::new(${rustStr(p.markdownContent ?? '')})\n${pad}    .wrap(Wrap { trim: false })`;
+    case 'grid':
+    case 'viewport': {
+      const children = node.children
+        .map((cid) => components[cid])
+        .filter(Boolean)
+        .map((c) => renderWidget(c, components, depth + 1));
+      if (children.length === 0) return `${pad}Paragraph::new("")`;
+      return `${pad}Vertical::new([\n${children.join(',\n')},\n${pad}])`;
+    }
+    case 'select': {
+      const items = (p.items ?? []).map((it) => rustStr(it)).join(', ');
+      return `${pad}List::new(vec![${items}])\n${pad}    .highlight_style(Style::default().reversed())`;
+    }
+    default:
+      return `${pad}Paragraph::new(${rustStr(`<${node.type}>`)})`;
+  }
+}
+
+export function exportRatatui(project: ProjectState): string {
+  const root = project.components[project.rootId];
+  if (!root) return '// empty project';
+
+  const widgetCode = renderWidget(root, project.components, 2);
+
+  return `// Auto-generated by ProjecTUI — Ratatui (Rust)
+//
+// Setup:
+//   cargo new tui-app && cd tui-app
+//   # Add to Cargo.toml dependencies:
+//   #   ratatui = "0.29"
+//   #   crossterm = "0.28"
+//   # Replace src/main.rs with this file, then:
+//   cargo run
+
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Style},
+    text::Text,
+    widgets::{
+        Block, BorderType, Borders, Gauge, List, ListItem, Paragraph,
+        Row, Table, Tabs,
+    },
+    Terminal,
+};
+use crossterm::{
+    event::{self, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use std::io;
+
+fn ui(f: &mut ratatui::Frame) {
+    let area = f.area();
+    let widget =
+${widgetCode};
+    f.render_widget(widget, area);
+}
+
+fn main() -> io::Result<()> {
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    loop {
+        terminal.draw(ui)?;
+        if let Event::Key(key) = event::read()? {
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Esc => break,
+                _ => {}
+            }
+        }
+    }
+
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    Ok(())
+}
+`;
+}

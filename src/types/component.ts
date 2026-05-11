@@ -1,0 +1,366 @@
+// Core schema for ProjecTUI.
+// The editor manipulates a normalized tree of `ComponentNode`s keyed by id.
+
+export type ComponentType =
+  | 'container'
+  | 'text'
+  | 'button'
+  | 'input'
+  | 'checkbox'
+  | 'select'
+  | 'list'
+  | 'textarea'
+  | 'table'
+  | 'tabs'
+  | 'statusbar'
+  | 'progressbar'
+  | 'modal'
+  | 'spinner'
+  | 'divider'
+  | 'toast'
+  | 'grid'
+  | 'viewport'
+  | 'timer'
+  | 'filepicker'
+  | 'asciitext'
+  | 'treeview'
+  | 'metriccard'
+  | 'markdowntext'
+  | 'line'
+  | 'circle'
+  | 'polygon'
+  | 'chart';
+
+export type BorderStyle = 'none' | 'single' | 'double' | 'rounded' | 'thick' | 'ascii';
+export type TextWrap = 'wrap' | 'truncate' | 'ellipsis' | 'clip';
+export type ChartKind = 'bar' | 'line' | 'pie' | 'sparkline';
+export type ShapeKind = 'line' | 'circle' | 'polygon' | 'rectangle';
+export type EventBindingType = 'onKey' | 'onTimer' | 'onFocus' | 'onBlur' | 'onClick';
+export type Direction = 'row' | 'column';
+export type Align = 'start' | 'center' | 'end' | 'stretch';
+export type TitleAlign = 'left' | 'center' | 'right';
+export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
+export type SpinnerStyle = 'dots' | 'line' | 'braille' | 'arc';
+export type AsciiFont = 'block' | 'slim' | 'shadow' | 'outline' | 'dotmatrix';
+export type AnimationType = 'solid' | 'gradient' | 'rainbow';
+export type AnimationDirection = 'ltr' | 'rtl' | 'center-out' | 'sides-in';
+
+export interface ColorAnimation {
+  enabled: boolean;
+  type: AnimationType;
+  direction: AnimationDirection;
+  durationMs: number;
+  loop: boolean;
+  loopCount?: number;
+  colors?: AnsiColor[]; // custom palette: 1 color for solid, 2-5 for gradient trail
+}
+
+// 16 standard ANSI palette names + 'default'.
+export type AnsiColor =
+  | 'default'
+  | 'black'
+  | 'red'
+  | 'green'
+  | 'yellow'
+  | 'blue'
+  | 'magenta'
+  | 'cyan'
+  | 'white'
+  | 'brightBlack'
+  | 'brightRed'
+  | 'brightGreen'
+  | 'brightYellow'
+  | 'brightBlue'
+  | 'brightMagenta'
+  | 'brightCyan'
+  | 'brightWhite';
+
+// `auto` = intrinsic size; `fill` = take remaining space; number = chars/rows.
+export type Size = number | 'auto' | 'fill';
+
+// Inline-styled text span for rich text rendering.
+export interface RichSpan {
+  text: string;
+  fg?: AnsiColor;
+  bg?: AnsiColor;
+  bold?: boolean;
+}
+
+export interface EventBinding {
+  type: EventBindingType;
+  key?: string;
+  intervalMs?: number;
+  action: string;
+  targetLayerId?: string;
+}
+
+export interface ComponentProps {
+  // Layout
+  direction?: Direction;
+  width?: Size;
+  height?: Size;
+  padding?: number;
+  align?: Align;
+  justify?: Align;
+  gap?: number;
+
+  // Free positioning (absolute mode)
+  absolute?: boolean;
+  x?: number;
+  y?: number;
+
+  // Style
+  border?: BorderStyle;
+  borderColor?: AnsiColor;
+  title?: string;
+  titleAlign?: TitleAlign;
+  titleColor?: AnsiColor;
+  fg?: AnsiColor;
+  bg?: AnsiColor;
+  bold?: boolean;
+
+  // Grid layout (for type=grid)
+  gridCols?: number;
+  gridGap?: number;
+
+  // Content
+  text?: string;
+  richSpans?: RichSpan[];
+  placeholder?: string;
+  label?: string;
+  items?: string[];
+  selectedIndex?: number;
+  value?: string | boolean | number;
+  checked?: boolean;
+  progress?: number; // 0..1
+  columns?: string[];
+  rows?: string[][];
+
+  // Spinner
+  spinnerStyle?: SpinnerStyle;
+
+  // ASCII Text font style
+  asciiFont?: AsciiFont;
+
+  // Toast
+  toastVariant?: ToastVariant;
+
+  // Timer
+  timerValue?: string;
+
+  // Divider / separator orientation
+  orientation?: 'horizontal' | 'vertical';
+
+  // List customization
+  listSelectedFg?: AnsiColor;
+  listSelectedBg?: AnsiColor;
+  listUnselectedFg?: AnsiColor;
+  listUnselectedBg?: AnsiColor;
+  listIcon?: string;
+
+  // Color animation (text, asciitext, progressbar)
+  animation?: ColorAnimation;
+
+  // Behavior
+  focusable?: boolean;
+  disabled?: boolean;
+
+  // Layout constraints (Idea #5)
+  constraints?: LayoutConstraints;
+
+  // Mock data binding (Idea #6)
+  mockDatasetId?: string;
+
+  // New component props (Idea #9)
+  treeItems?: TreeItem[];
+  metricValue?: string;
+  metricLabel?: string;
+  metricDelta?: string;
+  markdownContent?: string;
+
+  // Text display
+  textWrap?: TextWrap;
+  textAlign?: 'left' | 'center' | 'right';
+
+  // Spinner speed
+  spinnerSpeed?: number;
+
+  // Shape primitives
+  shapeKind?: ShapeKind;
+  radius?: number;
+  points?: Array<{ x: number; y: number }>;
+  shapeChar?: string;
+
+  // Chart
+  chartKind?: ChartKind;
+  chartData?: number[];
+  chartLabels?: string[];
+  chartMax?: number;
+
+  // Event bindings
+  eventBindings?: EventBinding[];
+}
+
+export type PinConstraint = 'left' | 'right' | 'top' | 'bottom' | 'fill' | 'intrinsic' | 'fixed';
+
+export interface LayoutConstraints {
+  horizontal?: PinConstraint;
+  vertical?: PinConstraint;
+}
+
+export interface TreeItem {
+  label: string;
+  children?: TreeItem[];
+  expanded?: boolean;
+}
+
+export type StateVariantName = 'default' | 'focus' | 'hover' | 'active' | 'disabled' | 'error' | string;
+
+export type StateVariantProps = Partial<Pick<ComponentProps, 'fg' | 'bg' | 'bold' | 'border' | 'borderColor'>>;
+
+export interface ComponentNode {
+  id: string;
+  type: ComponentType;
+  parentId: string | null;
+  children: string[];
+  props: ComponentProps;
+  // Editor-only state
+  hidden?: boolean;
+  locked?: boolean;
+  name?: string;
+  // State variants (Idea #6)
+  stateVariants?: Record<string, StateVariantProps>;
+}
+
+export type ComponentNodeByType<T extends ComponentType> = ComponentNode & { type: T };
+
+export function isNodeOfType<T extends ComponentType>(node: ComponentNode, type: T): node is ComponentNodeByType<T> {
+  return node.type === type;
+}
+
+export function assertNever(x: never): never {
+  throw new Error('Unreachable: ' + String(x));
+}
+
+// One screen / artboard in the project.
+export interface Layer {
+  id: string;
+  name: string;
+  rootId: string;
+  components: Record<string, ComponentNode>;
+}
+
+// A named step in the flow timeline.
+export interface TimelineStep {
+  id: string;
+  layerId: string;
+  label?: string;
+}
+
+// A transition edge between two timeline steps.
+export interface TimelineTransition {
+  id: string;
+  fromStepId: string;
+  toStepId: string;
+  event: 'keypress' | 'click' | 'custom';
+  trigger?: string;
+  label?: string;
+}
+
+export interface ComponentVariant {
+  id: string;
+  name: string;
+  description?: string;
+  rootType: ComponentType;
+  rootNodeId: string;
+  nodes: Record<string, ComponentNode>;
+  createdAt: number;
+}
+
+export type TokenType = 'color' | 'spacing' | 'border' | 'text';
+
+export interface DesignToken {
+  id: string;
+  name: string;
+  type: TokenType;
+  value: string;
+  group?: string;
+}
+
+export interface MockDataset {
+  id: string;
+  name: string;
+  data: unknown[];
+}
+
+export interface ProjectMetadata {
+  name?: string;
+  description?: string;
+  tags?: string[];
+  version?: string;
+  createdAt?: number;
+}
+
+export interface UserPreferences {
+  theme: ThemeName;
+  editorUiTheme: 'dark' | 'light' | 'high-contrast';
+  showGrid: boolean;
+  showRulers: boolean;
+  snapToGrid: boolean;
+  gridSize: number;
+  animationsEnabled: boolean;
+  reducedMotion: boolean;
+  autoSaveIntervalMs: number;
+  language: string;
+}
+
+export type KeyboardShortcutMap = Record<string, string>;
+
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  author?: string;
+  componentTypes?: string[];
+  exporterIds?: string[];
+  enabled: boolean;
+}
+
+export interface ProjectState {
+  // Active-screen data (kept at top level for renderer / exporter compat)
+  rootId: string;
+  components: Record<string, ComponentNode>;
+  termCols: number;
+  termRows: number;
+  theme: ThemeName;
+  // Multi-screen (optional for backward compat with old saves / test fixtures)
+  layers?: Layer[];
+  activeLayerIndex?: number;
+  // Flow timeline
+  timelineSteps?: TimelineStep[];
+  timelineTransitions?: TimelineTransition[];
+  // Reusable component variants
+  variants?: ComponentVariant[];
+  // Design tokens (Idea #1)
+  tokens?: DesignToken[];
+  // Mock datasets (Idea #6)
+  mockDatasets?: MockDataset[];
+  // Project metadata (Idea #10)
+  metadata?: ProjectMetadata;
+  // User preferences, shortcuts, plugins
+  preferences?: UserPreferences;
+  keyboardShortcuts?: KeyboardShortcutMap;
+  plugins?: PluginManifest[];
+}
+
+export type ThemeName = 'dracula' | 'solarized-dark' | 'tokyo-night' | 'mono';
+
+export interface Theme {
+  name: ThemeName;
+  bg: string;
+  fg: string;
+  border: string;
+  selection: string;
+  accent: string;
+  ansi: Record<Exclude<AnsiColor, 'default'>, string>;
+}
