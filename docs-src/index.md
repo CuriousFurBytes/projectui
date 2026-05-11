@@ -34,6 +34,8 @@ features:
     details: Optional WASM runtime (Pyodide) validates generated Python syntax in-browser, loaded on demand.
 ---
 
+<p class="hero-badge alpha-badge" style="text-align:center;margin:-0.5rem 0 1.5rem;color:var(--vp-c-yellow-1,#e6a817);font-weight:700;letter-spacing:.05em">⚠ ALPHA — Early Access</p>
+
 <div style="text-align:center;padding:1.5rem 0 0">
   <a href="/" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 1.25rem;border:1px solid var(--vp-c-border);border-radius:6px;font-family:var(--vp-font-family-mono);font-size:13px;color:var(--vp-c-text-2);text-decoration:none">▶ Open Editor</a>
 </div>

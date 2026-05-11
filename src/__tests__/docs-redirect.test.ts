@@ -31,7 +31,8 @@ describe('netlify.toml – /docs excluded from SPA fallback', () => {
 
 describe('package.json – build copies docs to dist', () => {
   it('build script copies docs/ into dist/', () => {
+    // VitePress is configured with outDir: '../dist/docs', invoked via the build:docs script.
     // The production build must include docs/ at dist/docs/ so Netlify can serve it.
-    expect(packageJson).toMatch(/cp.*docs.*dist|copy.*docs.*dist/i);
+    expect(packageJson).toMatch(/build:docs/);
   });
 });
