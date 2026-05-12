@@ -27,6 +27,7 @@ import { GridRulerOverlay } from './components/GridRulerOverlay';
 import { MotionAccessibilityToggle } from './components/MotionAccessibilityToggle';
 import { useEditor } from './store/editorStore';
 import { saveAutosave } from '@/lib/autosave';
+import { buildProjectHash, parseProjectFromHash } from '@/lib/shareUrl';
 import { MobileBlock, isMobile } from './components/MobileBlock';
 import clsx from 'clsx';
 
@@ -61,6 +62,7 @@ export default function App() {
   const selectedId = useEditor((s) => s.selectedId);
   const loadFromJson = useEditor((s) => s.loadFromJson);
   const preferences = useEditor((s) => s.preferences);
+  const project = useEditor((s) => s.project);
 
   // Global ⌘K opens command palette
   useEffect(() => {
@@ -73,6 +75,24 @@ export default function App() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  // On mount: load project from URL hash if present.
+  useEffect(() => {
+    parseProjectFromHash(window.location.hash).then((loaded) => {
+      if (loaded) loadFromJson(JSON.stringify(loaded));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep URL hash in sync with current project state (debounced 1s).
+  useEffect(() => {
+    const id = setTimeout(() => {
+      buildProjectHash(project).then((hash) => {
+        history.replaceState(null, '', hash);
+      });
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [project]);
 
   const autoSaveIntervalMs = preferences.autoSaveIntervalMs;
   useEffect(() => {
@@ -210,7 +230,7 @@ export default function App() {
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex">
           {/* Left sidebar */}
-          <aside className="w-64 shrink-0 border-r border-ink-600 flex flex-col gap-2 p-2 bg-ink-900">
+          <aside className="w-64 shrink-0 border-r border-ink-600 flex flex-col gap-2 p-2 bg-ink-900 overflow-y-auto min-h-0">
             <ComponentLibrary />
             <LayersPanel />
           </aside>
@@ -243,8 +263,8 @@ export default function App() {
           </main>
 
           {/* Right sidebar */}
-          <aside className="w-72 shrink-0 border-l border-ink-600 flex flex-col gap-2 p-2 bg-ink-900">
-            <div id="properties-panel">
+          <aside className="w-72 shrink-0 border-l border-ink-600 flex flex-col gap-2 p-2 bg-ink-900 overflow-y-auto min-h-0">
+            <div id="properties-panel" className="flex-1 min-h-0 flex flex-col">
               <PropertiesPanel />
             </div>
             {historyPanelOpen && <UndoHistoryPanel onClose={() => setHistoryPanelOpen(false)} />}

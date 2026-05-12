@@ -72,7 +72,7 @@ export function ComponentLibrary() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="overflow-y-auto flex-1 p-2 space-y-3" style={{ maxHeight: '600px' }}>
+          <div className="overflow-y-auto flex-1 min-h-0 p-2 space-y-3">
             {GROUPS.map((g) => {
               const items = COMPONENT_DEFS.filter(
                 (d) =>

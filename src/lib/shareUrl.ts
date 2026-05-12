@@ -97,3 +97,21 @@ export async function loadFromShareUrl(): Promise<ProjectState | null> {
     return null;
   }
 }
+
+/** Returns a hash fragment string like `#share=<encoded>` for the given project. */
+export async function buildProjectHash(project: ProjectState): Promise<string> {
+  const encoded = await encodeProject(project);
+  return `#share=${encoded}`;
+}
+
+/** Parses a project from a raw hash string like `#share=<encoded>`.
+ *  Returns null when the hash contains no share parameter or is invalid. */
+export async function parseProjectFromHash(hash: string): Promise<ProjectState | null> {
+  const match = hash.match(/[#&]share=([^&]+)/);
+  if (!match) return null;
+  try {
+    return await decodeProject(match[1]);
+  } catch {
+    return null;
+  }
+}

@@ -13,6 +13,7 @@ import type {
   ProjectState,
   TitleAlign,
 } from '@/types/component';
+import { resolvePercentSize } from '@/lib/sizeUtils';
 import { BOX } from './boxStyles';
 
 export interface Cell {
@@ -563,8 +564,12 @@ function layoutNode(
     .forEach((child) => {
       const ax = innerX + (child.props.x ?? 0);
       const ay = innerY + (child.props.y ?? 0);
-      const aw = typeof child.props.width === 'number' ? child.props.width : intrinsicWidth(child);
-      const ah = typeof child.props.height === 'number' ? child.props.height : intrinsicHeight(child);
+      const aw =
+        resolvePercentSize(child.props.width!, innerW) ??
+        (typeof child.props.width === 'number' ? child.props.width : intrinsicWidth(child));
+      const ah =
+        resolvePercentSize(child.props.height!, innerH) ??
+        (typeof child.props.height === 'number' ? child.props.height : intrinsicHeight(child));
       layoutNode(child, components, { x: ax, y: ay, w: aw, h: ah }, rects);
     });
 
@@ -572,13 +577,17 @@ function layoutNode(
   const totalGap = gap * Math.max(0, children.length - 1);
   const mainAvail = (direction === 'row' ? innerW : innerH) - totalGap;
 
-  // First pass: account for fixed and auto sizes; collect 'fill' children.
+  // First pass: account for fixed, percentage, and auto sizes; collect 'fill' children.
   const sizes = new Array<number>(children.length).fill(0);
   const fillIdx: number[] = [];
   let used = 0;
   children.forEach((child, i) => {
     const sizeProp = direction === 'row' ? child.props.width : child.props.height;
-    if (sizeProp === 'fill' || sizeProp === undefined) {
+    const pct = resolvePercentSize(sizeProp!, mainAvail);
+    if (pct !== null) {
+      sizes[i] = Math.max(1, pct);
+      used += sizes[i];
+    } else if (sizeProp === 'fill' || sizeProp === undefined) {
       fillIdx.push(i);
     } else if (typeof sizeProp === 'number') {
       sizes[i] = Math.max(1, sizeProp);
@@ -618,11 +627,12 @@ function layoutNode(
       cw = sizes[i];
       const heightProp = child.props.height;
       ch =
-        heightProp === undefined || heightProp === 'fill'
+        resolvePercentSize(heightProp!, innerH) ??
+        (heightProp === undefined || heightProp === 'fill'
           ? innerH
           : typeof heightProp === 'number'
           ? Math.min(heightProp, innerH)
-          : Math.min(intrinsicHeight(child), innerH);
+          : Math.min(intrinsicHeight(child), innerH));
       cx = cursor;
       // align:center on cross axis (vertical) for row direction
       cy = align === 'center' ? innerY + Math.floor((innerH - ch) / 2) : innerY;
@@ -631,11 +641,12 @@ function layoutNode(
       ch = sizes[i];
       const widthProp = child.props.width;
       cw =
-        widthProp === undefined || widthProp === 'fill'
+        resolvePercentSize(widthProp!, innerW) ??
+        (widthProp === undefined || widthProp === 'fill'
           ? innerW
           : typeof widthProp === 'number'
           ? Math.min(widthProp, innerW)
-          : Math.min(intrinsicWidth(child), innerW);
+          : Math.min(intrinsicWidth(child), innerW));
       // align:center on cross axis (horizontal) for column direction
       cx = align === 'center' ? innerX + Math.floor((innerW - cw) / 2) : innerX;
       cy = cursor;
