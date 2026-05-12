@@ -23,6 +23,7 @@ import { variantFromSubtree, cloneSubtreeWithNewIds } from '@/lib/variantUtils';
 import { DEFAULT_DESIGN_TOKENS } from '@/lib/designTokens';
 import { getAutosave } from '@/lib/autosave';
 import type { ViewportPreset } from '@/lib/viewportPresets';
+import { preferredGroupDirection } from '@/lib/groupUtils';
 
 const STORAGE_KEY = 'projectui.project.v1';
 
@@ -239,6 +240,7 @@ interface EditorState {
   removeSelected: () => void;
   // Grouping & alignment (Idea #3)
   groupNodes: (ids: string[], parentId: string) => string;
+  groupAsColumns: (ids: string[], parentId: string) => string;
   ungroupNode: (id: string) => void;
   alignNodes: (ids: string[], alignment: 'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom') => void;
   distributeNodes: (ids: string[], axis: 'horizontal' | 'vertical') => void;
@@ -902,7 +904,41 @@ export const useEditor = create<EditorState>()(
         const next = pushHistory(state, 'Group');
         const components = { ...state.project.components };
         const group = makeNode('container', parentId);
-        group.props = { ...group.props, direction: 'column', border: 'none', padding: 0 };
+        const parentWidth =
+          typeof parent.props.width === 'number'
+            ? parent.props.width
+            : state.project.termCols;
+        const direction = preferredGroupDirection(parentWidth, ids.length);
+        group.props = { ...group.props, direction, border: 'none', padding: 0, gap: direction === 'row' ? 1 : 0 };
+        components[group.id] = group;
+        const groupChildren: string[] = [];
+        for (const id of ids) {
+          const node = components[id];
+          if (!node) continue;
+          components[id] = { ...node, parentId: group.id };
+          groupChildren.push(id);
+        }
+        components[group.id] = { ...components[group.id], children: groupChildren };
+        const parentChildren = parent.children.filter((c) => !ids.includes(c));
+        const firstIdx = parent.children.findIndex((c) => ids.includes(c));
+        const insertAt = firstIdx >= 0 ? firstIdx : parentChildren.length;
+        parentChildren.splice(insertAt, 0, group.id);
+        components[parentId] = { ...parent, children: parentChildren };
+        const project = syncActiveLayer({ ...state.project, components });
+        saveProject(project);
+        set({ ...next, project, selectedId: group.id });
+        return group.id;
+      },
+
+      groupAsColumns: (ids, parentId) => {
+        const state = get();
+        if (ids.length === 0) return '';
+        const parent = state.project.components[parentId];
+        if (!parent) return '';
+        const next = pushHistory(state, 'Group as Columns');
+        const components = { ...state.project.components };
+        const group = makeNode('container', parentId);
+        group.props = { ...group.props, direction: 'row', border: 'none', padding: 0, gap: 1 };
         components[group.id] = group;
         const groupChildren: string[] = [];
         for (const id of ids) {

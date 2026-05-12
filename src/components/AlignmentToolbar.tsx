@@ -8,12 +8,22 @@ interface AlignButton {
 
 export function AlignmentToolbar() {
   const selectedIds = useEditor((s) => s.selectedIds);
+  const project = useEditor((s) => s.project);
   const alignNodes = useEditor((s) => s.alignNodes);
   const distributeNodes = useEditor((s) => s.distributeNodes);
+  const groupNodes = useEditor((s) => s.groupNodes);
+  const groupAsColumns = useEditor((s) => s.groupAsColumns);
 
   const ids = Array.from(selectedIds);
 
   if (ids.length < 2) return null;
+
+  // Find the shared parent id (all selected nodes must share one for grouping)
+  const firstNode = project.components[ids[0]];
+  const sharedParentId = firstNode?.parentId ?? project.rootId;
+  const canGroup = ids.every(
+    (id) => project.components[id]?.parentId === sharedParentId,
+  );
 
   const alignButtons: AlignButton[] = [
     { label: '⬤◻◻', title: 'Align Left', action: () => alignNodes(ids, 'left') },
@@ -67,6 +77,29 @@ export function AlignmentToolbar() {
           {btn.label}
         </button>
       ))}
+
+      {canGroup && (
+        <>
+          <div className="h-4 w-px bg-ink-600 mx-1" />
+          <span className="text-[10px] text-ink-400 mr-1">Group</span>
+          <button
+            title="Group (auto-direction: row when space allows)"
+            onClick={() => groupNodes(ids, sharedParentId)}
+            className="btn px-1.5 py-0.5 text-xs"
+            aria-label="Group"
+          >
+            ⊞ Auto
+          </button>
+          <button
+            title="Group as Columns (always side-by-side, direction: row)"
+            onClick={() => groupAsColumns(ids, sharedParentId)}
+            className="btn px-1.5 py-0.5 text-xs"
+            aria-label="Group as Columns"
+          >
+            ⊟ Columns
+          </button>
+        </>
+      )}
 
       <span className="ml-2 text-[10px] text-ink-400">
         {ids.length} selected

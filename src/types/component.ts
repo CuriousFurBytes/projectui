@@ -75,8 +75,8 @@ export type AnsiColor =
   | 'brightCyan'
   | 'brightWhite';
 
-// `auto` = intrinsic size; `fill` = take remaining space; number = chars/rows.
-export type Size = number | 'auto' | 'fill';
+// `auto` = intrinsic size; `fill` = take remaining space; number = chars/rows; `50%` = percent of parent.
+export type Size = number | 'auto' | 'fill' | `${number}%`;
 
 // Inline-styled text span for rich text rendering.
 export interface RichSpan {

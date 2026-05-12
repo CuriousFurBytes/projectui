@@ -22,6 +22,7 @@ export function RightClickMenu({ x, y, nodeId, onClose }: Props) {
     setLocked,
     setHidden,
     groupNodes,
+    groupAsColumns,
   } = useEditor();
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -94,15 +95,26 @@ export function RightClickMenu({ x, y, nodeId, onClose }: Props) {
     },
     { divider: true },
     ...(canGroup
-      ? [{
-          label: 'Group Selected',
-          icon: '⊞',
-          action: () => {
-            const parent = project.components[allSelectedIds[0]];
-            groupNodes(allSelectedIds, parent?.parentId ?? rootId);
-            onClose();
+      ? [
+          {
+            label: 'Group (auto)',
+            icon: '⊞',
+            action: () => {
+              const parent = project.components[allSelectedIds[0]];
+              groupNodes(allSelectedIds, parent?.parentId ?? rootId);
+              onClose();
+            },
           },
-        }]
+          {
+            label: 'Group as Columns',
+            icon: '⊟',
+            action: () => {
+              const parent = project.components[allSelectedIds[0]];
+              groupAsColumns(allSelectedIds, parent?.parentId ?? rootId);
+              onClose();
+            },
+          },
+        ]
       : []),
     {
       label: 'Delete',

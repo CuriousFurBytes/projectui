@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import { getTheme } from '@/lib/themes';
+import { getColorPickerSide } from '@/lib/colorPickerPosition';
+import { sizeToString, stringToSize } from '@/lib/sizeUtils';
 import type {
   AnsiColor,
   AnimationDirection,
@@ -13,7 +15,6 @@ import type {
   ComponentProps,
   Direction,
   RichSpan,
-  Size,
   SpinnerStyle,
   TitleAlign,
   ToastVariant,
@@ -64,17 +65,6 @@ const ANSI_COLORS: AnsiColor[] = [
 const BORDER_STYLES: BorderStyle[] = ['none', 'single', 'double', 'rounded', 'thick', 'ascii'];
 const TITLE_ALIGNS: TitleAlign[] = ['left', 'center', 'right'];
 
-function sizeToString(s: Size | undefined): string {
-  if (s === undefined) return 'fill';
-  if (typeof s === 'number') return String(s);
-  return s;
-}
-function stringToSize(s: string): Size {
-  if (s === 'fill' || s === 'auto') return s;
-  const n = Number(s);
-  return Number.isFinite(n) && n > 0 ? n : 'auto';
-}
-
 function Field({ label, children, span2 }: { label: string; children: ReactNode; span2?: boolean }) {
   return (
     <label className={span2 ? 'col-span-2 flex flex-col gap-1' : 'flex flex-col gap-1'}>
@@ -95,6 +85,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 const CHECKERBOARD = 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px';
 
+const COLOR_PICKER_WIDTH = 176; // w-44 = 11rem = 176px
+
 function ColorSelect({
   label,
   value,
@@ -106,11 +98,20 @@ function ColorSelect({
 }) {
   const theme = getTheme(useEditor((s) => s.project.theme));
   const [open, setOpen] = useState(false);
+  const [dropSide, setDropSide] = useState<'left' | 'right'>('right');
   const ref = useRef<HTMLDivElement>(null);
   const current = value ?? 'default';
 
   const swatchColor = (c: AnsiColor) =>
     c === 'default' ? CHECKERBOARD : (theme.ansi[c as Exclude<AnsiColor, 'default'>] ?? '#888');
+
+  const handleOpen = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setDropSide(getColorPickerSide(rect.left, window.innerWidth, COLOR_PICKER_WIDTH));
+    }
+    setOpen((o) => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -127,7 +128,7 @@ function ColorSelect({
         <button
           type="button"
           className="input flex items-center gap-2 w-full text-xs"
-          onClick={() => setOpen((o) => !o)}
+          onClick={handleOpen}
         >
           <span
             className="inline-block w-4 h-4 rounded-sm border border-ink-500 shrink-0"
@@ -136,7 +137,9 @@ function ColorSelect({
           <span className="truncate">{current}</span>
         </button>
         {open && (
-          <div className="absolute z-30 left-0 top-full mt-1 bg-ink-800 border border-ink-500 rounded shadow-lg p-2 w-44">
+          <div
+            className={`absolute z-30 top-full mt-1 bg-ink-800 border border-ink-500 rounded shadow-lg p-2 w-44 ${dropSide === 'left' ? 'right-0' : 'left-0'}`}
+          >
             <div className="grid grid-cols-4 gap-1">
               {ANSI_COLORS.map((c) => (
                 <button
@@ -326,7 +329,7 @@ export function PropertiesPanel() {
         <span>Properties</span>
         <span className="text-[10px] normal-case tracking-normal text-accent">{def.label}</span>
       </div>
-      <div className="overflow-auto flex-1">
+      <div className="overflow-auto flex-1 min-h-0">
         {/* Identity */}
         <Section title="Identity">
           <div className="col-span-2">
@@ -353,7 +356,7 @@ export function PropertiesPanel() {
               className="input"
               value={sizeToString(p.width)}
               onChange={(e) => setProp('width', stringToSize(e.target.value))}
-              placeholder="auto / fill / 20"
+              placeholder="auto / fill / 20 / 50%"
             />
           </Field>
           <Field label="Height">
@@ -361,7 +364,7 @@ export function PropertiesPanel() {
               className="input"
               value={sizeToString(p.height)}
               onChange={(e) => setProp('height', stringToSize(e.target.value))}
-              placeholder="auto / fill / 5"
+              placeholder="auto / fill / 5 / 50%"
             />
           </Field>
           {def.acceptsChildren && (

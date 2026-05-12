@@ -219,7 +219,7 @@ export function LayersPanel() {
         />
       </div>
 
-      <div className="overflow-auto flex-1 py-1">{root ? renderNode(root, 0) : null}</div>
+      <div className="overflow-auto flex-1 min-h-0 py-1">{root ? renderNode(root, 0) : null}</div>
     </section>
   );
 }
