@@ -33,7 +33,8 @@ function goStr(s: string): string {
 function sizeVal(s: Size | undefined, parent: number): number {
   if (s === undefined || s === 'fill') return parent;
   if (s === 'auto') return 0;
-  return s;
+  if (typeof s === 'string' && s.endsWith('%')) return Math.round(parseFloat(s) / 100 * parent);
+  return s as number;
 }
 
 function renderWidget(node: ComponentNode, components: Record<string, ComponentNode>, parent: { w: number; h: number }): string {
