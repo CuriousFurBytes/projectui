@@ -29,6 +29,10 @@ export function LayersPanel() {
   }, [search]);
 
   const renderNode = (node: ComponentNode, depth: number): JSX.Element | null => {
+    const parent = node.parentId ? project.components[node.parentId] : null;
+    const siblingIndex = parent ? parent.children.indexOf(node.id) : -1;
+    const canMoveUp = !!parent && siblingIndex > 0;
+    const canMoveDown = !!parent && siblingIndex >= 0 && siblingIndex < parent.children.length - 1;
     const def = getDef(node.type);
     const isSel = node.id === selectedId;
     const label = node.name ?? def.label;
@@ -80,6 +84,43 @@ export function LayersPanel() {
           <span className="text-accent w-4 text-center">{def.icon}</span>
           <span className="truncate flex-1">{label}</span>
           <span className="text-[10px] text-ink-300">{node.type}</span>
+
+          {node.id !== project.rootId && (
+            <>
+              <button
+                className={clsx(
+                  'opacity-0 group-hover:opacity-100 text-ink-300',
+                  canMoveUp ? 'hover:text-white' : 'cursor-not-allowed opacity-40 group-hover:opacity-40',
+                )}
+                title="Move up"
+                aria-label="Move up"
+                disabled={!canMoveUp}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!parent || !canMoveUp) return;
+                  move(node.id, parent.id, siblingIndex - 1);
+                }}
+              >
+                ↑
+              </button>
+              <button
+                className={clsx(
+                  'opacity-0 group-hover:opacity-100 text-ink-300',
+                  canMoveDown ? 'hover:text-white' : 'cursor-not-allowed opacity-40 group-hover:opacity-40',
+                )}
+                title="Move down"
+                aria-label="Move down"
+                disabled={!canMoveDown}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!parent || !canMoveDown) return;
+                  move(node.id, parent.id, siblingIndex + 1);
+                }}
+              >
+                ↓
+              </button>
+            </>
+          )}
           <button
             className="opacity-0 group-hover:opacity-100 hover:text-white text-ink-300"
             title={node.hidden ? 'Show' : 'Hide'}

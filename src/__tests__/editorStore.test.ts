@@ -78,6 +78,24 @@ describe('editorStore – move parent validation', () => {
     const innerChildren = useEditor.getState().project.components[innerId].children;
     expect(innerChildren).not.toContain(outerId);
   });
+
+  it('can reorder siblings within the same parent using move()', () => {
+    const rootId = useEditor.getState().project.rootId;
+    const firstId = useEditor.getState().addChild(rootId, 'container');
+    const secondId = useEditor.getState().addChild(rootId, 'container');
+    const thirdId = useEditor.getState().addChild(rootId, 'container');
+
+    let rootChildren = useEditor.getState().project.components[rootId].children;
+    expect(rootChildren.slice(-3)).toEqual([firstId, secondId, thirdId]);
+
+    // Move the newest container before the oldest one.
+    const beforeFirstIdx = rootChildren.indexOf(firstId);
+    useEditor.getState().move(thirdId, rootId, beforeFirstIdx);
+
+    rootChildren = useEditor.getState().project.components[rootId].children;
+    const firstThree = rootChildren.slice(beforeFirstIdx, beforeFirstIdx + 3);
+    expect(firstThree).toEqual([thirdId, firstId, secondId]);
+  });
 });
 
 describe('editorStore – timeline migration and history', () => {
