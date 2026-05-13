@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import { getTheme } from '@/lib/themes';
@@ -145,6 +145,8 @@ function TextInputWithIconPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const modalTitleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -162,6 +164,23 @@ function TextInputWithIconPicker({
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -226,9 +245,16 @@ function TextInputWithIconPicker({
       </div>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/80" onClick={() => setOpen(false)}>
-          <div className="w-[min(42rem,95vw)] max-h-[70vh] panel rounded p-3 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalTitleId}
+            className="w-[min(42rem,95vw)] max-h-[70vh] panel rounded p-3 flex flex-col gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <div className="text-xs text-ink-200">
+              <div id={modalTitleId} className="text-xs text-ink-200">
                 Search Nerd Font icons
                 <span className="ml-2 text-[10px] uppercase tracking-wide text-ink-400">Powerline + Symbols</span>
               </div>
