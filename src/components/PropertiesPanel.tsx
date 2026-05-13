@@ -1159,7 +1159,6 @@ function RichSpansEditor({
         <div key={i} className="flex flex-col gap-1 bg-ink-700 rounded p-1.5">
           <div className="flex gap-1 items-center">
             <TextInputWithIconPicker
-              className="input text-xs"
               value={span.text}
               placeholder="text"
               onChange={(value) => update(i, { text: value })}
