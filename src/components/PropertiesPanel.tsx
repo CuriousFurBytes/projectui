@@ -87,6 +87,7 @@ const CHECKERBOARD = 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 
 
 const COLOR_PICKER_WIDTH = 176; // w-44 = 11rem = 176px
 const NERD_FONT_PICKER_LIMIT = 80;
+const ICON_PICKER_TRIGGER_GLYPH = '󰓥';
 
 const NERD_FONT_ICONS = [
   { symbol: '', name: 'Powerline Right Separator', group: 'Powerline' },
@@ -220,7 +221,7 @@ function TextInputWithIconPicker({
           aria-label="Insert Nerd Font icon"
           onClick={() => setOpen(true)}
         >
-          󰓥
+          {ICON_PICKER_TRIGGER_GLYPH}
         </button>
       </div>
       {open && (
