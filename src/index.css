@@ -38,6 +38,8 @@
 
   .input {
     @apply text-xs w-full bg-ink-900 border border-ink-500 rounded px-2 py-1 focus:outline-none focus:border-accent;
+
+    font-family: 'FiraCode Nerd Font', 'Fira Code Nerd Font', 'FiraCode Nerd Font Mono', 'Fira Code Nerd Font Mono', 'Fira Code', 'Symbols Nerd Font Mono', 'Symbols Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   }
 
   .label {
