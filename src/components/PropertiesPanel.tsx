@@ -131,6 +131,7 @@ function TextInputWithIconPicker({
   placeholder,
   maxLength,
   multiline,
+  multilineMinHeightClass = 'min-h-[80px]',
   className = 'input',
 }: {
   value: string;
@@ -138,6 +139,7 @@ function TextInputWithIconPicker({
   placeholder?: string;
   maxLength?: number;
   multiline?: boolean;
+  multilineMinHeightClass?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -187,7 +189,7 @@ function TextInputWithIconPicker({
     });
   };
 
-  const inputClassName = multiline ? `${className} min-h-[80px] flex-1` : `${className} flex-1`;
+  const inputClassName = multiline ? `${className} ${multilineMinHeightClass} flex-1` : `${className} flex-1`;
 
   return (
     <>
@@ -972,7 +974,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
             <Field label="Rows (one per line, comma-separated cells)">
               <TextInputWithIconPicker
                 multiline
-                className="input min-h-[100px]"
+                multilineMinHeightClass="min-h-[100px]"
                 value={(p.rows ?? []).map((r) => r.join(', ')).join('\n')}
                 onChange={(value) =>
                   setProp(
