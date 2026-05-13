@@ -6,7 +6,7 @@ import { getTheme } from '@/lib/themes';
 import type { AnsiColor, ComponentType } from '@/types/component';
 import { getDef, COMPONENT_DEFS } from '@/lib/componentDefs';
 import { getAnimatedColors } from '@/lib/colorAnimation';
-import { TERMINAL_CANVAS_FONT_STACK } from '@/lib/fonts';
+import { TERMINAL_CANVAS_FONT_STACK, TERMINAL_CANVAS_FONT_STYLE } from '@/lib/fonts';
 import clsx from 'clsx';
 
 const ANIMATED_TYPES = new Set(['text', 'asciitext', 'progressbar']);
@@ -271,7 +271,7 @@ export function TerminalPreview({
           <span
             ref={probeRef}
             className="absolute -top-96 left-0 whitespace-pre"
-            style={{ fontFamily: TERMINAL_CANVAS_FONT_STACK, fontSize: 14, lineHeight: '18px' }}
+            style={{ ...TERMINAL_CANVAS_FONT_STYLE, fontSize: 14, lineHeight: '18px' }}
             aria-hidden
           >
             {'M'.repeat(80)}
@@ -359,6 +359,7 @@ export function TerminalPreview({
                   top: r.y * cell.h,
                   width: r.w * cell.w,
                   height: cell.h,
+                  ...TERMINAL_CANVAS_FONT_STYLE,
                   fontSize: 14,
                   lineHeight: '18px',
                   zIndex: 50,
@@ -451,7 +452,7 @@ function CellGrid({
   return (
     <div
       className="font-mono whitespace-pre select-none"
-      style={{ fontFamily: TERMINAL_CANVAS_FONT_STACK, fontSize, lineHeight: `${lineHeight}px` }}
+      style={{ ...TERMINAL_CANVAS_FONT_STYLE, fontFamily: TERMINAL_CANVAS_FONT_STACK, fontSize, lineHeight: `${lineHeight}px` }}
     >
       {grid.map((row, ri) => {
         const runs: { text: string; fg?: string; bg?: string; bold?: boolean }[] = [];
