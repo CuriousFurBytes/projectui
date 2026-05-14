@@ -40,7 +40,10 @@ function applyAnimationToCells(
   animation: ComponentNode['props']['animation'],
 ) {
   if (!animation?.enabled || cells.length === 0) return;
-  const durationMs = Math.max(100, animation.durationMs);
+  const parsedDuration = Number(animation.durationMs);
+  const durationMs = Number.isFinite(parsedDuration) && parsedDuration > 0
+    ? Math.max(100, parsedDuration)
+    : 1500;
   const cycleCount = Math.floor(elapsedMs / durationMs);
   if (!animation.loop && animation.loopCount != null && cycleCount >= animation.loopCount) return;
   const tick = (elapsedMs % durationMs) / durationMs;

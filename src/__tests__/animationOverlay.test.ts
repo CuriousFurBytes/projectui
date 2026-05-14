@@ -79,6 +79,7 @@ describe('animationOverlay', () => {
       },
     });
     const overlay = buildAnimationOverlay({ n1: node }, { n1: rect }, 0);
-    expect(overlay.get('3,3')).toBe('brightGreen');
+    const titleStartCol = rect.x + 1;
+    expect(overlay.get(`${rect.y},${titleStartCol}`)).toBe('brightGreen');
   });
 });
