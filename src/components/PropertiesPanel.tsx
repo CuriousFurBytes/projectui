@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { useEditor } from '@/store/editorStore';
 import { getDef } from '@/lib/componentDefs';
 import { getTheme } from '@/lib/themes';
@@ -86,6 +86,210 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 const CHECKERBOARD = 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px';
 
 const COLOR_PICKER_WIDTH = 176; // w-44 = 11rem = 176px
+const NERD_FONT_PICKER_LIMIT = 80;
+const ICON_PICKER_TRIGGER_GLYPH = '󰓥';
+
+const NERD_FONT_ICONS = [
+  { symbol: '', name: 'Powerline Right Separator', group: 'Powerline' },
+  { symbol: '', name: 'Powerline Left Separator', group: 'Powerline' },
+  { symbol: '', name: 'Powerline Right Thin Separator', group: 'Powerline' },
+  { symbol: '', name: 'Powerline Left Thin Separator', group: 'Powerline' },
+  { symbol: '', name: 'Git Branch', group: 'Dev' },
+  { symbol: '', name: 'Git', group: 'Dev' },
+  { symbol: '󰊢', name: 'Git Pull Request', group: 'Dev' },
+  { symbol: '󰈺', name: 'Folder', group: 'UI' },
+  { symbol: '󰈔', name: 'File', group: 'UI' },
+  { symbol: '󰍛', name: 'Search', group: 'UI' },
+  { symbol: '󰅖', name: 'Close', group: 'UI' },
+  { symbol: '󰌑', name: 'Check', group: 'UI' },
+  { symbol: '󰜺', name: 'Warning', group: 'Status' },
+  { symbol: '󰀪', name: 'Info', group: 'Status' },
+  { symbol: '󰅙', name: 'Error', group: 'Status' },
+  { symbol: '󰢶', name: 'Clock', group: 'Status' },
+  { symbol: '󰨡', name: 'Sparkles', group: 'Status' },
+  { symbol: '󰒠', name: 'Lock', group: 'Status' },
+  { symbol: '󰇥', name: 'User', group: 'Status' },
+  { symbol: '󰈆', name: 'Home', group: 'UI' },
+  { symbol: '󰆤', name: 'Arrow Right', group: 'UI' },
+  { symbol: '󰆢', name: 'Arrow Left', group: 'UI' },
+  { symbol: '󰁔', name: 'Chevron Right', group: 'UI' },
+  { symbol: '󰁍', name: 'Chevron Left', group: 'UI' },
+] as const;
+
+function insertIconAtSelection(
+  value: string,
+  icon: string,
+  selectionStart: number | null,
+  selectionEnd: number | null,
+) {
+  if (selectionStart == null || selectionEnd == null) return `${value}${icon}`;
+  return `${value.slice(0, selectionStart)}${icon}${value.slice(selectionEnd)}`;
+}
+
+function TextInputWithIconPicker({
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  multiline,
+  multilineMinHeightClass = 'min-h-[80px]',
+  className = 'input',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+  multiline?: boolean;
+  multilineMinHeightClass?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const modalTitleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const filteredIcons = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const all = term
+      ? NERD_FONT_ICONS.filter((icon) =>
+          [icon.symbol, icon.name, icon.group].some((part) => part.toLowerCase().includes(term)),
+        )
+      : NERD_FONT_ICONS;
+    return all.slice(0, NERD_FONT_PICKER_LIMIT);
+  }, [query]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
+  const insertIcon = (icon: string) => {
+    const activeRef = multiline ? textareaRef.current : inputRef.current;
+    const selectionStart = activeRef?.selectionStart ?? null;
+    const selectionEnd = activeRef?.selectionEnd ?? null;
+    const fallbackPos = value.length;
+    const insertPos = selectionStart ?? fallbackPos;
+    const next = insertIconAtSelection(
+      value,
+      icon,
+      selectionStart,
+      selectionEnd,
+    );
+    onChange(next);
+    setOpen(false);
+    requestAnimationFrame(() => {
+      const currentRef = multiline ? textareaRef.current : inputRef.current;
+      if (!currentRef) return;
+      const pos = insertPos + icon.length;
+      currentRef.focus();
+      currentRef.setSelectionRange(pos, pos);
+    });
+  };
+
+  const inputClassName = multiline ? `${className} ${multilineMinHeightClass} flex-1` : `${className} flex-1`;
+
+  return (
+    <>
+      <div className="flex items-start gap-1">
+        {multiline ? (
+          <textarea
+            ref={textareaRef}
+            className={inputClassName}
+            value={value}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        ) : (
+          <input
+            ref={inputRef}
+            className={inputClassName}
+            value={value}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        )}
+        <button
+          type="button"
+          className="btn text-xs px-1.5 py-1 shrink-0"
+          title="Insert Nerd Font icon"
+          aria-label="Insert Nerd Font icon"
+          onClick={() => setOpen(true)}
+        >
+          {ICON_PICKER_TRIGGER_GLYPH}
+        </button>
+      </div>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/80" onClick={() => setOpen(false)}>
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalTitleId}
+            className="w-[min(42rem,95vw)] max-h-[70vh] panel rounded p-3 flex flex-col gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div id={modalTitleId} className="text-xs text-ink-200">
+                Search Nerd Font icons
+                <span className="ml-2 text-[10px] uppercase tracking-wide text-ink-400">Powerline + Symbols</span>
+              </div>
+              <button type="button" className="btn text-xs px-2 py-0.5" onClick={() => setOpen(false)}>Close</button>
+            </div>
+            <input
+              autoFocus
+              className="input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by symbol, name, or group"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 overflow-auto pr-1">
+              {filteredIcons.map((icon) => (
+                <button
+                  key={`${icon.group}-${icon.name}`}
+                  type="button"
+                  className="input text-left !py-1.5 flex items-center gap-2 hover:border-accent"
+                  onClick={() => insertIcon(icon.symbol)}
+                  title={`${icon.name} (${icon.group})`}
+                >
+                  <span className="text-lg leading-none">{icon.symbol}</span>
+                  <span className="truncate text-[11px]">{icon.name}</span>
+                </button>
+              ))}
+            </div>
+            {filteredIcons.length === 0 && (
+              <div className="text-xs text-ink-300">No icons match your search.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 function ColorSelect({
   label,
@@ -472,11 +676,7 @@ export function PropertiesPanel() {
             </select>
           </Field>
           <Field label="Title">
-            <input
-              className="input"
-              value={p.title ?? ''}
-              onChange={(e) => setProp('title', e.target.value)}
-            />
+            <TextInputWithIconPicker value={p.title ?? ''} onChange={(value) => setProp('title', value)} />
           </Field>
           {hasBorder && (
             <>
@@ -620,7 +820,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Text">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
           <RichSpansEditor spans={p.richSpans} onChange={(s) => setProp('richSpans', s)} />
@@ -631,7 +831,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Text">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
         </Section>
@@ -641,7 +841,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Text (plain)">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
           <RichSpansEditor spans={p.richSpans} onChange={(s) => setProp('richSpans', s)} />
@@ -653,19 +853,17 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Placeholder">
-              <input
-                className="input"
+              <TextInputWithIconPicker
                 value={p.placeholder ?? ''}
-                onChange={(e) => setProp('placeholder', e.target.value)}
+                onChange={(value) => setProp('placeholder', value)}
               />
             </Field>
           </div>
           <div className="col-span-2">
             <Field label="Value">
-              <input
-                className="input"
+              <TextInputWithIconPicker
                 value={String(p.value ?? '')}
-                onChange={(e) => setProp('value', e.target.value)}
+                onChange={(value) => setProp('value', value)}
               />
             </Field>
           </div>
@@ -676,11 +874,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Label">
-              <input
-                className="input"
-                value={p.label ?? ''}
-                onChange={(e) => setProp('label', e.target.value)}
-              />
+              <TextInputWithIconPicker value={p.label ?? ''} onChange={(value) => setProp('label', value)} />
             </Field>
           </div>
           <div className="col-span-2 flex items-center gap-2">
@@ -702,13 +896,13 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Items">
           <div className="col-span-2">
             <Field label="Items (one per line)">
-              <textarea
-                className="input min-h-[80px]"
+              <TextInputWithIconPicker
+                multiline
                 value={(p.items ?? []).join('\n')}
-                onChange={(e) =>
+                onChange={(value) =>
                   setProp(
                     'items',
-                    e.target.value.split('\n').map((s) => s.trimEnd()),
+                    value.split('\n').map((s) => s.trimEnd()),
                   )
                 }
               />
@@ -731,13 +925,13 @@ function ContentSection({ node }: { node: ComponentNode }) {
           <Section title="Items">
             <div className="col-span-2">
               <Field label="Items (one per line)">
-                <textarea
-                  className="input min-h-[80px]"
+                <TextInputWithIconPicker
+                  multiline
                   value={(p.items ?? []).join('\n')}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setProp(
                       'items',
-                      e.target.value.split('\n').map((s) => s.trimEnd()),
+                      value.split('\n').map((s) => s.trimEnd()),
                     )
                   }
                 />
@@ -756,11 +950,10 @@ function ContentSection({ node }: { node: ComponentNode }) {
           <Section title="List Style">
             <div className="col-span-2">
               <Field label="Selection icon">
-                <input
-                  className="input"
+                <TextInputWithIconPicker
                   value={p.listIcon ?? '›'}
                   maxLength={4}
-                  onChange={(e) => setProp('listIcon', e.target.value)}
+                  onChange={(value) => setProp('listIcon', value)}
                   placeholder="›"
                 />
               </Field>
@@ -793,13 +986,12 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Data">
           <div className="col-span-2">
             <Field label="Columns (comma-separated)">
-              <input
-                className="input"
+              <TextInputWithIconPicker
                 value={(p.columns ?? []).join(', ')}
-                onChange={(e) =>
+                onChange={(value) =>
                   setProp(
                     'columns',
-                    e.target.value.split(',').map((s) => s.trim()),
+                    value.split(',').map((s) => s.trim()),
                   )
                 }
               />
@@ -807,13 +999,14 @@ function ContentSection({ node }: { node: ComponentNode }) {
           </div>
           <div className="col-span-2">
             <Field label="Rows (one per line, comma-separated cells)">
-              <textarea
-                className="input min-h-[100px]"
+              <TextInputWithIconPicker
+                multiline
+                multilineMinHeightClass="min-h-[100px]"
                 value={(p.rows ?? []).map((r) => r.join(', ')).join('\n')}
-                onChange={(e) =>
+                onChange={(value) =>
                   setProp(
                     'rows',
-                    e.target.value
+                    value
                       .split('\n')
                       .map((line) => line.split(',').map((c) => c.trim())),
                   )
@@ -828,7 +1021,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Label">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
           <div className="col-span-2">
@@ -851,7 +1044,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Message">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
           <div className="col-span-2">
@@ -874,7 +1067,10 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Value (e.g. 01:23:45)">
-              <input className="input" value={p.timerValue ?? '00:00'} onChange={(e) => setProp('timerValue', e.target.value)} />
+              <TextInputWithIconPicker
+                value={p.timerValue ?? '00:00'}
+                onChange={(value) => setProp('timerValue', value)}
+              />
             </Field>
           </div>
         </Section>
@@ -884,11 +1080,11 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Files">
           <div className="col-span-2">
             <Field label="Items (one per line)">
-              <textarea
-                className="input min-h-[80px]"
+              <TextInputWithIconPicker
+                multiline
                 value={(p.items ?? []).join('\n')}
-                onChange={(e) =>
-                  setProp('items', e.target.value.split('\n').map((s) => s.trimEnd()))
+                onChange={(value) =>
+                  setProp('items', value.split('\n').map((s) => s.trimEnd()))
                 }
               />
             </Field>
@@ -900,11 +1096,10 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Text">
-              <input
-                className="input"
+              <TextInputWithIconPicker
                 value={p.text ?? ''}
                 placeholder="HELLO"
-                onChange={(e) => setProp('text', e.target.value)}
+                onChange={(value) => setProp('text', value)}
               />
             </Field>
           </div>
@@ -930,7 +1125,7 @@ function ContentSection({ node }: { node: ComponentNode }) {
         <Section title="Content">
           <div className="col-span-2">
             <Field label="Label (optional)">
-              <input className="input" value={p.text ?? ''} onChange={(e) => setProp('text', e.target.value)} />
+              <TextInputWithIconPicker value={p.text ?? ''} onChange={(value) => setProp('text', value)} />
             </Field>
           </div>
           <Field label="Orientation">
@@ -990,11 +1185,10 @@ function RichSpansEditor({
       {list.map((span, i) => (
         <div key={i} className="flex flex-col gap-1 bg-ink-700 rounded p-1.5">
           <div className="flex gap-1 items-center">
-            <input
-              className="input flex-1 text-xs"
+            <TextInputWithIconPicker
               value={span.text}
               placeholder="text"
-              onChange={(e) => update(i, { text: e.target.value })}
+              onChange={(value) => update(i, { text: value })}
             />
             <button
               className="text-ink-300 hover:text-red-400 text-xs shrink-0"
