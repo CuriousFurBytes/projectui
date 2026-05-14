@@ -24,7 +24,7 @@ function makePerimeterCells(rect: Rect): Array<{ row: number; col: number }> {
 }
 
 function makeTitleCells(node: ComponentNode, rect: Rect): Array<{ row: number; col: number }> {
-  if (!node.props.title) return [];
+  if (!node.props.title || rect.w < 2 || rect.h < 2) return [];
   const title = ` ${node.props.title.trim()} `.slice(0, rect.w - 2);
   const align = node.props.titleAlign ?? 'left';
   let startCol = rect.x + 1;
@@ -40,7 +40,7 @@ function applyAnimationToCells(
   animation: ComponentNode['props']['animation'],
 ) {
   if (!animation?.enabled || cells.length === 0) return;
-  const durationMs = Math.max(100, animation.durationMs || 1500);
+  const durationMs = Math.max(100, animation.durationMs);
   const cycleCount = Math.floor(elapsedMs / durationMs);
   if (!animation.loop && animation.loopCount != null && cycleCount >= animation.loopCount) return;
   const tick = (elapsedMs % durationMs) / durationMs;

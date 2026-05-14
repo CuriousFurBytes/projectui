@@ -65,7 +65,10 @@ describe('animationOverlay', () => {
       },
     });
     const overlay = buildAnimationOverlay({ n1: node }, { n1: rect }, 500);
-    expect(overlay.get('3,6')).toBe('brightGreen');
+    const title = ` ${node.props.title?.trim() ?? ''} `.slice(0, rect.w - 2);
+    const titleStartCol = rect.x + 1;
+    const animatedTitleCol = titleStartCol + Math.floor(title.length * 0.5);
+    expect(overlay.get(`${rect.y},${animatedTitleCol}`)).toBe('brightGreen');
   });
 
   it('lets border title animation override border animation at overlapping cells', () => {
