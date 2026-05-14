@@ -5,11 +5,10 @@ import { render, type Cell, type Rect } from '@/renderer/render';
 import { getTheme } from '@/lib/themes';
 import type { AnsiColor, ComponentType } from '@/types/component';
 import { getDef, COMPONENT_DEFS } from '@/lib/componentDefs';
-import { getAnimatedColors } from '@/lib/colorAnimation';
+import { buildAnimationOverlay, hasNodeAnimationEnabled } from '@/lib/animationOverlay';
 import { TERMINAL_CANVAS_FONT_STACK, TERMINAL_CANVAS_FONT_STYLE } from '@/lib/fonts';
 import clsx from 'clsx';
 
-const ANIMATED_TYPES = new Set(['text', 'asciitext', 'progressbar']);
 const KNOWN_TYPES = new Set<string>(COMPONENT_DEFS.map((d) => d.type));
 
 interface CellSize { w: number; h: number }
@@ -89,7 +88,7 @@ export function TerminalPreview({
 
   const hasAnimations = useMemo(() =>
     Object.values(project.components).some(
-      n => n.props.animation?.enabled && ANIMATED_TYPES.has(n.type),
+      n => hasNodeAnimationEnabled(n),
     ),
   [project.components]);
 
@@ -101,25 +100,8 @@ export function TerminalPreview({
 
   const animOverlay = useMemo((): Map<string, AnsiColor> | null => {
     if (!hasAnimations || animPaused) return null;
-    const overlay = new Map<string, AnsiColor>();
     const elapsed = nowMs - animEpochRef.current;
-    Object.values(project.components).forEach(node => {
-      const anim = node.props.animation;
-      if (!anim?.enabled || !ANIMATED_TYPES.has(node.type)) return;
-      const rect = result.rects[node.id];
-      if (!rect) return;
-      const cycleCount = Math.floor(elapsed / anim.durationMs);
-      if (!anim.loop && anim.loopCount != null && cycleCount >= anim.loopCount) return;
-      const tick = (elapsed % anim.durationMs) / anim.durationMs;
-      const colors = getAnimatedColors(anim, rect.w, tick);
-      for (let row = rect.y; row < rect.y + rect.h; row++) {
-        for (let col = rect.x; col < rect.x + rect.w; col++) {
-          const c = colors[col - rect.x];
-          if (c && c !== 'default') overlay.set(`${row},${col}`, c);
-        }
-      }
-    });
-    return overlay;
+    return buildAnimationOverlay(project.components, result.rects, elapsed);
   }, [hasAnimations, animPaused, nowMs, project.components, result.rects]);
 
   const probeRef = useRef<HTMLSpanElement>(null);

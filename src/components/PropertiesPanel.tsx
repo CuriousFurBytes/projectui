@@ -341,12 +341,17 @@ function ColorSelect({
 function AnimationSection({
   animation,
   onChange,
+  sectionTitle = 'Animation',
+  enabledLabel = 'Enable color animation',
 }: {
   animation: ColorAnimation;
   onChange: (a: ColorAnimation) => void;
+  sectionTitle?: string;
+  enabledLabel?: string;
 }) {
   const set = <K extends keyof ColorAnimation>(key: K, value: ColorAnimation[K]) =>
     onChange({ ...animation, [key]: value });
+  const id = useId();
 
   const colors = animation.colors ?? [];
   const solidColor: AnsiColor = colors[0] ?? 'brightCyan';
@@ -359,15 +364,15 @@ function AnimationSection({
   };
 
   return (
-    <Section title="Animation">
+    <Section title={sectionTitle}>
       <div className="col-span-2 flex items-center gap-2">
         <input
-          id="anim-enabled"
+          id={`${id}-enabled`}
           type="checkbox"
           checked={animation.enabled}
           onChange={(e) => set('enabled', e.target.checked)}
         />
-        <label htmlFor="anim-enabled" className="text-xs">Enable color animation</label>
+        <label htmlFor={`${id}-enabled`} className="text-xs">{enabledLabel}</label>
       </div>
       {animation.enabled && (
         <>
@@ -448,12 +453,12 @@ function AnimationSection({
           </Field>
           <div className="col-span-2 flex items-center gap-2">
             <input
-              id="anim-loop"
+              id={`${id}-loop`}
               type="checkbox"
               checked={animation.loop}
               onChange={(e) => set('loop', e.target.checked)}
             />
-            <label htmlFor="anim-loop" className="text-xs">Loop forever</label>
+            <label htmlFor={`${id}-loop`} className="text-xs">Loop forever</label>
           </div>
           {!animation.loop && (
             <Field label="Loop count">
@@ -694,6 +699,22 @@ export function PropertiesPanel() {
           <AnimationSection
             animation={p.animation ?? DEFAULT_ANIMATION}
             onChange={(anim) => setProp('animation', anim)}
+          />
+        )}
+        {hasBorder && (
+          <AnimationSection
+            sectionTitle="Border Animation"
+            enabledLabel="Enable border animation"
+            animation={p.borderAnimation ?? DEFAULT_ANIMATION}
+            onChange={(anim) => setProp('borderAnimation', anim)}
+          />
+        )}
+        {hasBorder && !!p.title && (
+          <AnimationSection
+            sectionTitle="Border Title Animation"
+            enabledLabel="Enable border title animation"
+            animation={p.borderTitleAnimation ?? DEFAULT_ANIMATION}
+            onChange={(anim) => setProp('borderTitleAnimation', anim)}
           />
         )}
 

@@ -160,6 +160,9 @@ export interface ComponentProps {
 
   // Color animation (text, asciitext, progressbar)
   animation?: ColorAnimation;
+  // Border and border-title color animations
+  borderAnimation?: ColorAnimation;
+  borderTitleAnimation?: ColorAnimation;
 
   // Behavior
   focusable?: boolean;
