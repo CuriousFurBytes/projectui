@@ -69,6 +69,18 @@ describe('docs – library links', () => {
   it('links to Ink (Node.js TUI)', () => {
     expect(librariesMd).toMatch(/vadimdemedes\/ink|Ink.*Node/i);
   });
+
+  it('references Nerd Fonts', () => {
+    expect(librariesMd).toMatch(/nerd.?fonts?/i);
+  });
+
+  it('links to nerdfonts.com', () => {
+    expect(librariesMd).toContain('nerdfonts.com');
+  });
+
+  it('references FiraCode Nerd Font or Fira Code Nerd Font', () => {
+    expect(librariesMd).toMatch(/fira.?code.?nerd.?font/i);
+  });
 });
 
 describe('docs – AI disclaimer', () => {

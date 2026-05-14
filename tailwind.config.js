@@ -5,12 +5,12 @@ export default {
     extend: {
       fontFamily: {
         mono: [
-          'JetBrains Mono',
+          'FiraCode Nerd Font',
+          'Fira Code Nerd Font',
+          'FiraCode Nerd Font Mono',
+          'Symbols Nerd Font Mono',
           'Fira Code',
-          'SFMono-Regular',
-          'Menlo',
-          'Monaco',
-          'Consolas',
+          'ui-monospace',
           'monospace',
         ],
       },

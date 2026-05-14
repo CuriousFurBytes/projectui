@@ -5,6 +5,7 @@ import { getDef } from '@/lib/componentDefs';
 import { getTheme } from '@/lib/themes';
 import { getColorPickerSide } from '@/lib/colorPickerPosition';
 import { sizeToString, stringToSize } from '@/lib/sizeUtils';
+import { NERD_FONT_ICONS } from '@/lib/nerdFontIcons';
 import type {
   AnsiColor,
   AnimationDirection,
@@ -86,35 +87,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 const CHECKERBOARD = 'repeating-conic-gradient(#555 0% 25%, transparent 0% 50%) 0 0 / 8px 8px';
 
 const COLOR_PICKER_WIDTH = 176; // w-44 = 11rem = 176px
-const NERD_FONT_PICKER_LIMIT = 80;
+const NERD_FONT_PICKER_LIMIT = 200;
 const ICON_PICKER_TRIGGER_GLYPH = '󰓥';
 
-const NERD_FONT_ICONS = [
-  { symbol: '', name: 'Powerline Right Separator', group: 'Powerline' },
-  { symbol: '', name: 'Powerline Left Separator', group: 'Powerline' },
-  { symbol: '', name: 'Powerline Right Thin Separator', group: 'Powerline' },
-  { symbol: '', name: 'Powerline Left Thin Separator', group: 'Powerline' },
-  { symbol: '', name: 'Git Branch', group: 'Dev' },
-  { symbol: '', name: 'Git', group: 'Dev' },
-  { symbol: '󰊢', name: 'Git Pull Request', group: 'Dev' },
-  { symbol: '󰈺', name: 'Folder', group: 'UI' },
-  { symbol: '󰈔', name: 'File', group: 'UI' },
-  { symbol: '󰍛', name: 'Search', group: 'UI' },
-  { symbol: '󰅖', name: 'Close', group: 'UI' },
-  { symbol: '󰌑', name: 'Check', group: 'UI' },
-  { symbol: '󰜺', name: 'Warning', group: 'Status' },
-  { symbol: '󰀪', name: 'Info', group: 'Status' },
-  { symbol: '󰅙', name: 'Error', group: 'Status' },
-  { symbol: '󰢶', name: 'Clock', group: 'Status' },
-  { symbol: '󰨡', name: 'Sparkles', group: 'Status' },
-  { symbol: '󰒠', name: 'Lock', group: 'Status' },
-  { symbol: '󰇥', name: 'User', group: 'Status' },
-  { symbol: '󰈆', name: 'Home', group: 'UI' },
-  { symbol: '󰆤', name: 'Arrow Right', group: 'UI' },
-  { symbol: '󰆢', name: 'Arrow Left', group: 'UI' },
-  { symbol: '󰁔', name: 'Chevron Right', group: 'UI' },
-  { symbol: '󰁍', name: 'Chevron Left', group: 'UI' },
-] as const;
 
 function insertIconAtSelection(
   value: string,
