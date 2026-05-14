@@ -15,6 +15,7 @@ function makeAnimation(overrides: Partial<ColorAnimation> = {}): ColorAnimation 
 }
 
 function makeNode(overrides: Partial<ComponentNode> = {}): ComponentNode {
+  const { props: overrideProps, ...rest } = overrides;
   return {
     id: 'n1',
     type: 'container',
@@ -23,9 +24,9 @@ function makeNode(overrides: Partial<ComponentNode> = {}): ComponentNode {
     props: {
       border: 'single',
       title: 'Demo',
-      ...overrides.props,
+      ...overrideProps,
     },
-    ...overrides,
+    ...rest,
   };
 }
 
