@@ -5,8 +5,13 @@ export default {
     extend: {
       fontFamily: {
         mono: [
-          'JetBrains Mono',
+          'FiraCode Nerd Font',
+          'Fira Code Nerd Font',
+          'FiraCode Nerd Font Mono',
+          'Fira Code Nerd Font Mono',
           'Fira Code',
+          'Symbols Nerd Font Mono',
+          'Symbols Nerd Font',
           'SFMono-Regular',
           'Menlo',
           'Monaco',
